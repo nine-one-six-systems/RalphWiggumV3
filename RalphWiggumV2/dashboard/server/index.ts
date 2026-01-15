@@ -16,6 +16,7 @@ import { checkAllDependencies } from './dependencyChecker.js';
 import { ProjectRegistry } from './projectRegistry.js';
 import { InstanceSpawner } from './instanceSpawner.js';
 import { ProjectDiscovery } from './projectDiscovery.js';
+import { ReviewRunner } from './reviewRunner.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -133,6 +134,9 @@ async function startServer() {
   const projectRegistry = new ProjectRegistry();
   const instanceSpawner = new InstanceSpawner(RALPH_PATH);
   const projectDiscovery = new ProjectDiscovery();
+
+  // Initialize review runner
+  const reviewRunner = new ReviewRunner(TARGET_PROJECT_PATH);
 
   // Track connected clients
   const clients = new Set<WebSocket>();
@@ -511,6 +515,21 @@ ${audienceContent}
               ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to browse directory: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
             }
             break;
+
+          // ============================================
+          // Review WebSocket Handlers
+          // ============================================
+          case 'review:run':
+            try {
+              await reviewRunner.runReview(message.payload);
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'review:error', payload: { error: err instanceof Error ? err.message : 'Unknown error' } }));
+            }
+            break;
+
+          case 'review:cancel':
+            reviewRunner.cancel();
+            break;
         }
       } catch (err) {
         console.error('Error handling message:', err);
@@ -616,6 +635,27 @@ ${audienceContent}
     broadcast({ type: 'launcher:instance:crashed', payload: data });
     const instances = instanceSpawner.listInstances();
     broadcast({ type: 'launcher:instances:list', payload: instances });
+  });
+
+  // Review runner events
+  reviewRunner.on('status', (status) => {
+    broadcast({ type: 'review:status', payload: status });
+  });
+
+  reviewRunner.on('output', (text) => {
+    broadcast({ type: 'review:output', payload: { text } });
+  });
+
+  reviewRunner.on('complete', (result) => {
+    broadcast({ type: 'review:complete', payload: result });
+  });
+
+  reviewRunner.on('error', (error) => {
+    broadcast({ type: 'review:error', payload: { error } });
+  });
+
+  reviewRunner.on('cancelled', () => {
+    broadcast({ type: 'review:error', payload: { error: 'Review cancelled' } });
   });
 
   // REST API endpoints

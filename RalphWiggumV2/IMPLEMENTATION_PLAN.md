@@ -4,7 +4,7 @@
 
 Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integration, task parsing, cross-platform support, agent management, and more.
 
-**Status**: 74/85 tasks complete (87%) - Feature Sets 1-12 complete, Feature Set 13 pending
+**Status**: 78/85 tasks complete (92%) - Feature Sets 1-12 complete, Feature Set 13 partially complete (Tasks 92-94 remaining)
 
 ---
 
@@ -179,10 +179,10 @@ Add file browser to launcher for easier project path selection.
 
 Build quality gates using LLM reviews for subjective criteria that tests can't catch (UX, tone, aesthetics).
 
-- [ ] Task 90: Implement createReview() in src/lib/llm-review.ts using Claude API
-- [ ] Task 91: Add ReviewConfig and ReviewResult types to types/index.ts
+- [x] Task 90: Implement createReview() in server/reviewRunner.ts using Claude CLI
+- [x] Task 91: Add ReviewConfig and ReviewResult types to types/index.ts
 - [ ] Task 92: Create review criteria templates for UI tasks in PROMPT_build.md
 - [ ] Task 93: Add post-task review step to loop.sh before marking task complete
 - [ ] Task 94: Integrate screenshot capture for visual reviews (optional)
-- [ ] Task 95: Add review:run WebSocket handler to server/index.ts
-- [ ] Task 96: Create ReviewPanel.tsx component to display review results in dashboard
+- [x] Task 95: Add review:run WebSocket handler to server/index.ts
+- [x] Task 96: Create ReviewPanel.tsx component to display review results in dashboard

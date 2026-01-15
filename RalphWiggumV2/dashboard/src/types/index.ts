@@ -284,7 +284,11 @@ export type ServerMessage =
   | LauncherInstanceCrashedMessage
   | LauncherDiscoverResultMessage
   | LauncherErrorMessage
-  | LauncherBrowseResultMessage;
+  | LauncherBrowseResultMessage
+  | ReviewStatusMessage
+  | ReviewOutputMessage
+  | ReviewCompleteMessage
+  | ReviewErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -645,7 +649,9 @@ export type ClientCommand =
   | LauncherStopInstanceCommand
   | LauncherListInstancesCommand
   | LauncherDiscoverCommand
-  | LauncherBrowseCommand;
+  | LauncherBrowseCommand
+  | ReviewRunCommand
+  | ReviewCancelCommand;
 
 // ============================================================================
 // Project Launcher Types (Feature Set 9)
@@ -813,4 +819,60 @@ export interface LauncherBrowseCommand {
 export interface LauncherBrowseResultMessage extends WSMessage {
   type: 'launcher:browse:result';
   payload: BrowseResult;
+}
+
+// ============================================================================
+// LLM-as-Judge Review Types (Feature Set 13)
+// ============================================================================
+
+// Configuration for running a review
+export interface ReviewConfig {
+  criteria: string;      // What to evaluate (behavioral, observable)
+  artifact: string;      // Text content OR image path (.png, .jpg, .jpeg)
+  artifactPath?: string; // Optional path context for image artifacts
+}
+
+// Result of a review
+export interface ReviewResult {
+  pass: boolean;
+  feedback?: string;     // Only present when pass=false
+  criteria: string;
+  reviewedAt: string;    // ISO date string
+}
+
+// Review runner status
+export interface ReviewRunnerStatus {
+  running: boolean;
+  startedAt: string | null;  // ISO date string
+}
+
+// Review WebSocket commands
+export interface ReviewRunCommand {
+  type: 'review:run';
+  payload: ReviewConfig;
+}
+
+export interface ReviewCancelCommand {
+  type: 'review:cancel';
+}
+
+// Review WebSocket messages
+export interface ReviewStatusMessage extends WSMessage {
+  type: 'review:status';
+  payload: ReviewRunnerStatus;
+}
+
+export interface ReviewOutputMessage extends WSMessage {
+  type: 'review:output';
+  payload: { text: string };
+}
+
+export interface ReviewCompleteMessage extends WSMessage {
+  type: 'review:complete';
+  payload: ReviewResult;
+}
+
+export interface ReviewErrorMessage extends WSMessage {
+  type: 'review:error';
+  payload: { error: string };
 }
