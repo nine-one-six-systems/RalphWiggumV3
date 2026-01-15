@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo } from '@/types';
+import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo, ReviewGeneratorStatus, ReviewGeneratorMode } from '@/types';
 
 interface UseWebSocketReturn {
   connected: boolean;
@@ -74,6 +74,15 @@ interface UseWebSocketReturn {
   installAgentGlobal: (agentId: string) => void;
   installAgentProject: (agentId: string) => void;
   installAllAgentsGlobal: () => void;
+  // Review generator state (Feature Set 14)
+  reviewGeneratorStatus: ReviewGeneratorStatus;
+  reviewGeneratorOutput: string;
+  reviewGeneratorComplete: { report: string; output: string } | null;
+  reviewGeneratorError: string | null;
+  // Review generator handlers
+  generateReview: (options: { mode: ReviewGeneratorMode; focusArea?: string; specFile?: string }) => void;
+  cancelReviewGenerator: () => void;
+  clearReviewGeneratorOutput: () => void;
 }
 
 const DEFAULT_LOOP_STATUS: LoopStatus = {
@@ -105,6 +114,12 @@ const DEFAULT_PLAN_STATUS: PlanGeneratorStatus = {
 
 const DEFAULT_PRD_STATUS: PRDGeneratorStatus = {
   generating: false,
+  startedAt: null,
+};
+
+const DEFAULT_REVIEW_GENERATOR_STATUS: ReviewGeneratorStatus = {
+  generating: false,
+  mode: null,
   startedAt: null,
 };
 
@@ -158,6 +173,11 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   const [repoAgents, setRepoAgents] = useState<RepoAgentInfo[]>([]);
   const [repoAgentsLoading, setRepoAgentsLoading] = useState(false);
   const [agentInstalling, setAgentInstalling] = useState<string | null>(null);
+  // Review generator state (Feature Set 14)
+  const [reviewGeneratorStatus, setReviewGeneratorStatus] = useState<ReviewGeneratorStatus>(DEFAULT_REVIEW_GENERATOR_STATUS);
+  const [reviewGeneratorOutput, setReviewGeneratorOutput] = useState('');
+  const [reviewGeneratorComplete, setReviewGeneratorComplete] = useState<{ report: string; output: string } | null>(null);
+  const [reviewGeneratorError, setReviewGeneratorError] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -362,6 +382,25 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             setAgentInstalling(null);
             setRepoAgentsLoading(false);
             break;
+          // Review generator messages (Feature Set 14)
+          case 'review-generator:status':
+            setReviewGeneratorStatus(message.payload);
+            if (message.payload.generating) {
+              // Clear previous results when starting new generation
+              setReviewGeneratorOutput('');
+              setReviewGeneratorComplete(null);
+              setReviewGeneratorError(null);
+            }
+            break;
+          case 'review-generator:output':
+            setReviewGeneratorOutput((prev) => prev + message.payload.text);
+            break;
+          case 'review-generator:complete':
+            setReviewGeneratorComplete(message.payload);
+            break;
+          case 'review-generator:error':
+            setReviewGeneratorError(message.payload.error);
+            break;
         }
       } catch {
         console.error('Failed to parse WebSocket message');
@@ -411,6 +450,28 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     setPrdOutput('');
     setPrdComplete(null);
     setPrdError(null);
+  }, []);
+
+  // Review generator handlers (Feature Set 14)
+  const generateReview = useCallback((options: { mode: ReviewGeneratorMode; focusArea?: string; specFile?: string }) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'review-generator:generate',
+        payload: options,
+      }));
+    }
+  }, []);
+
+  const cancelReviewGenerator = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'review-generator:cancel' }));
+    }
+  }, []);
+
+  const clearReviewGeneratorOutput = useCallback(() => {
+    setReviewGeneratorOutput('');
+    setReviewGeneratorComplete(null);
+    setReviewGeneratorError(null);
   }, []);
 
   const scanProject = useCallback(() => {
@@ -585,5 +646,13 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     installAgentGlobal,
     installAgentProject,
     installAllAgentsGlobal,
+    // Review generator (Feature Set 14)
+    reviewGeneratorStatus,
+    reviewGeneratorOutput,
+    reviewGeneratorComplete,
+    reviewGeneratorError,
+    generateReview,
+    cancelReviewGenerator,
+    clearReviewGeneratorOutput,
   };
 }

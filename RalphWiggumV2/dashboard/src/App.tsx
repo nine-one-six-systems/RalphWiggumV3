@@ -13,16 +13,18 @@ import { LauncherHome } from './components/launcher/LauncherHome'
  * dashboard instances on different ports.
  */
 function App() {
-  // Check URL params for launcher mode
+  // Check URL params for launcher mode and backend port
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get('mode');
+  const backendPort = urlParams.get('backend');
 
   // Show launcher if mode=launcher, otherwise show dashboard
   if (mode === 'launcher') {
     return <LauncherHome />
   }
 
-  return <Dashboard />
+  // Pass custom backend port if specified (for multi-instance support)
+  return <Dashboard backendPort={backendPort ? parseInt(backendPort, 10) : undefined} />
 }
 
 export default App

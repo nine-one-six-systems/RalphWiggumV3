@@ -6,12 +6,14 @@ set -euo pipefail
 #   ./loop.sh plan [max_iterations]          # Standard planning mode
 #   ./loop.sh plan-slc [max_iterations]      # SLC-oriented planning mode
 #   ./loop.sh plan-work "work description"   # Work-scoped planning on current branch
+#   ./loop.sh review [max_iterations]        # Review mode - analyze code vs docs
 # Examples:
 #   ./loop.sh                               # Build mode, unlimited
 #   ./loop.sh 20                            # Build mode, max 20 iterations
 #   ./loop.sh plan 5                        # Standard planning, max 5 iterations
 #   ./loop.sh plan-slc                      # SLC planning, unlimited
 #   ./loop.sh plan-work "user auth"         # Scoped planning for work branch
+#   ./loop.sh review                        # Review code vs documentation
 
 # Support running from a different directory (embedded mode)
 # RALPH_DIR points to RalphWiggumV2's directory for prompt files
@@ -45,6 +47,11 @@ elif [ "$1" = "plan-work" ]; then
     WORK_SCOPE="$2"
     PROMPT_FILE="PROMPT_plan_work.md"
     MAX_ITERATIONS=${3:-5}  # Default 5 for work planning
+elif [ "$1" = "review" ]; then
+    # Review mode - analyze code vs documentation
+    MODE="review"
+    PROMPT_FILE="PROMPT_review.md"
+    MAX_ITERATIONS=${2:-1}  # Default 1 iteration for review (deep analysis)
 elif [[ "${1:-}" =~ ^[0-9]+$ ]]; then
     # Build mode with max iterations
     MAX_ITERATIONS=$1
@@ -344,12 +351,23 @@ REMAINING_TASKS=$(count_incomplete_tasks)
 echo "✓ Starting with $LAST_TASK_COUNT completed tasks, $REMAINING_TASKS remaining"
 echo ""
 
-# Check if already complete
-if [ "$REMAINING_TASKS" -eq 0 ]; then
+# Check if already complete (skip for review mode - review always runs)
+if [ "$MODE" != "review" ] && [ "$REMAINING_TASKS" -eq 0 ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "✅ All tasks already complete! Nothing to do."
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     exit 0
+fi
+
+# Review mode special message
+if [ "$MODE" = "review" ]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📋 REVIEW MODE"
+    echo "   Analyzing code vs documentation..."
+    echo "   Output: REVIEW_REPORT.md"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
 fi
 
 # Main loop
@@ -363,6 +381,17 @@ while true; do
             echo "Scoped plan created: $WORK_SCOPE"
             echo "To build, run:"
             echo "  ./loop.sh 20"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        elif [ "$MODE" = "review" ]; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "📋 Review complete!"
+            echo "   Report: REVIEW_REPORT.md"
+            echo ""
+            echo "   Next steps:"
+            echo "   - Review findings in REVIEW_REPORT.md"
+            echo "   - Run ./loop.sh plan to generate fix tasks"
+            echo "   - Or manually address issues"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         fi
         break
@@ -444,6 +473,13 @@ while true; do
         fi
     fi
 
+    # Review mode: just continue to next iteration (no completion signal needed)
+    if [ "$MODE" = "review" ]; then
+        ITERATION=$((ITERATION + 1))
+        echo -e "\n\n======================== REVIEW ITERATION $ITERATION ========================\n"
+        continue
+    fi
+
     # Check for completion - verify BOTH signal AND actual task counts
     INCOMPLETE_TASKS=$(count_incomplete_tasks)
     COMPLETED_TASKS=$(count_completed_tasks)
@@ -456,6 +492,11 @@ while true; do
             echo "   Completed: $COMPLETED_TASKS tasks"
             echo "   Remaining: 0 tasks"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            # Push final changes to remote
+            CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+            if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+                git push origin "$CURRENT_BRANCH" 2>/dev/null || git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
+            fi
             break
         else
             echo ""
@@ -478,6 +519,11 @@ while true; do
         echo "✅ All tasks verified complete!"
         echo "   Completed: $COMPLETED_TASKS tasks"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        # Push final changes to remote
+        CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+        if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+            git push origin "$CURRENT_BRANCH" 2>/dev/null || git push -u origin "$CURRENT_BRANCH" 2>/dev/null || true
+        fi
         break
     fi
 

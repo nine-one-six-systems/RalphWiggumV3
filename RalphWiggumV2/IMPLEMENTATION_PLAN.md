@@ -4,7 +4,7 @@
 
 Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integration, task parsing, cross-platform support, agent management, and more.
 
-**Status**: 85/85 tasks complete (100%) - All Feature Sets 1-13 COMPLETE
+**Status**: 94/94 tasks complete (100%) - All Feature Sets 1-14 COMPLETE
 
 ---
 
@@ -186,3 +186,17 @@ Build quality gates using LLM reviews for subjective criteria that tests can't c
 - [x] Task 94: Integrate screenshot capture for visual reviews (optional - hook point added)
 - [x] Task 95: Add review:run WebSocket handler to server/index.ts
 - [x] Task 96: Create ReviewPanel.tsx component to display review results in dashboard
+
+### Feature Set 14: Code Review Mode (Code vs Documentation Analysis) ✅
+
+Add review mode to analyze codebase against documentation to identify what is actually functional vs incomplete.
+
+- [x] Task 97: Create PROMPT_review.md with verification and discovery phases
+- [x] Task 98: Add `review` mode handling to loop.sh
+- [x] Task 99: Create reviewGenerator.ts server module
+- [x] Task 100: Add ReviewMode type and REVIEW_REPORT types to types/index.ts
+- [x] Task 101: Create ReviewGenerator.tsx component for dashboard
+- [x] Task 102: Add Review tab to Dashboard.tsx
+- [x] Task 103: Wire up WebSocket handlers for review-generator messages
+- [x] Task 104: Add quick scan mode (TODOs/FIXMEs only)
+- [x] Task 105: Add spec-focused review mode

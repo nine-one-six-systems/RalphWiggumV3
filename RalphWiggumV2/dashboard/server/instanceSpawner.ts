@@ -61,6 +61,8 @@ export class InstanceSpawner extends EventEmitter {
         },
         detached: !isWindows,
         stdio: ['ignore', 'pipe', 'pipe'],
+        // On Windows, .cmd files require shell: true to execute properly
+        shell: isWindows,
       });
 
       if (!childProcess.pid) {

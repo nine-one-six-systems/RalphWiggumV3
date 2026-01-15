@@ -1,4 +1,4 @@
-export type LoopMode = 'plan' | 'plan-slc' | 'plan-work' | 'build';
+export type LoopMode = 'plan' | 'plan-slc' | 'plan-work' | 'build' | 'review';
 
 export interface LoopStatus {
   running: boolean;
@@ -288,7 +288,11 @@ export type ServerMessage =
   | ReviewStatusMessage
   | ReviewOutputMessage
   | ReviewCompleteMessage
-  | ReviewErrorMessage;
+  | ReviewErrorMessage
+  | ReviewGeneratorStatusMessage
+  | ReviewGeneratorOutputMessage
+  | ReviewGeneratorCompleteMessage
+  | ReviewGeneratorErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -651,7 +655,9 @@ export type ClientCommand =
   | LauncherDiscoverCommand
   | LauncherBrowseCommand
   | ReviewRunCommand
-  | ReviewCancelCommand;
+  | ReviewCancelCommand
+  | GenerateReviewCommand
+  | CancelReviewGeneratorCommand;
 
 // ============================================================================
 // Project Launcher Types (Feature Set 9)
@@ -874,5 +880,97 @@ export interface ReviewCompleteMessage extends WSMessage {
 
 export interface ReviewErrorMessage extends WSMessage {
   type: 'review:error';
+  payload: { error: string };
+}
+
+// ============================================================================
+// Code Review Generator Types (Feature Set 14 - Review Mode)
+// ============================================================================
+
+// Review Generator mode types
+export type ReviewGeneratorMode = 'review' | 'review-quick' | 'review-spec';
+
+// Status of review generation
+export interface ReviewGeneratorStatus {
+  generating: boolean;
+  mode: ReviewGeneratorMode | null;
+  startedAt: Date | null;
+}
+
+// Parsed review report data
+export interface ReviewReportData {
+  generatedAt: string;
+  mode: string;
+  duration: string;
+  summary: {
+    tasksClaimedComplete: number;
+    actuallyVerifiedComplete: number;
+    incompleteBroken: number;
+    technicalDebtItems: number;
+    missingTestCoverage: number;
+  };
+  healthScore: {
+    completed: number;
+    total: number;
+    percentage: number;
+  };
+  verifiedComplete: Array<{
+    taskId: string;
+    description: string;
+    evidence: string;
+  }>;
+  incompleteMarkedDone: Array<{
+    taskId: string;
+    description: string;
+    issueType: string;
+    details: string;
+    file?: string;
+  }>;
+  technicalDebt: Array<{
+    severity: 'High' | 'Medium' | 'Low';
+    file: string;
+    line: number;
+    issue: string;
+  }>;
+  missingCoverage: Array<{
+    spec: string;
+    criterion: string;
+    status: string;
+  }>;
+  recommendations: string[];
+}
+
+// Review Generator WebSocket Commands
+export interface GenerateReviewCommand {
+  type: 'review-generator:generate';
+  payload: {
+    mode: ReviewGeneratorMode;
+    focusArea?: string;
+    specFile?: string;
+  };
+}
+
+export interface CancelReviewGeneratorCommand {
+  type: 'review-generator:cancel';
+}
+
+// Review Generator WebSocket Messages
+export interface ReviewGeneratorStatusMessage extends WSMessage {
+  type: 'review-generator:status';
+  payload: ReviewGeneratorStatus;
+}
+
+export interface ReviewGeneratorOutputMessage extends WSMessage {
+  type: 'review-generator:output';
+  payload: { text: string };
+}
+
+export interface ReviewGeneratorCompleteMessage extends WSMessage {
+  type: 'review-generator:complete';
+  payload: { report: string; output: string };
+}
+
+export interface ReviewGeneratorErrorMessage extends WSMessage {
+  type: 'review-generator:error';
   payload: { error: string };
 }

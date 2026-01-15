@@ -18,6 +18,7 @@ import {
   AlertCircle,
   FolderOpen,
   Loader2,
+  LayoutDashboard,
 } from 'lucide-react';
 
 export function LauncherHome() {
@@ -101,6 +102,16 @@ export function LauncherHome() {
             </div>
 
             <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/'}
+                className="gap-2"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </Button>
+
               <Badge variant={connected ? 'success' : 'destructive'}>
                 {connected ? (
                   <><Wifi className="h-3 w-3 mr-1" /> Connected</>

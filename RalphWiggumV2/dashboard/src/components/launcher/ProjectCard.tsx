@@ -81,8 +81,9 @@ export function ProjectCard({
 
   const handleOpenDashboard = () => {
     if (isRunning && instance) {
-      // Open the running dashboard in a new tab
-      window.open(`http://localhost:${instance.backendPort}`, '_blank');
+      // Open the dashboard frontend with the backend port as a query param
+      // The frontend will connect to the specified backend WebSocket port
+      window.open(`http://localhost:5173?backend=${instance.backendPort}`, '_blank');
     } else {
       onOpenDashboard(project.id);
     }

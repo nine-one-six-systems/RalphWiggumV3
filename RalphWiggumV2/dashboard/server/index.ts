@@ -17,6 +17,7 @@ import { ProjectRegistry } from './projectRegistry.js';
 import { InstanceSpawner } from './instanceSpawner.js';
 import { ProjectDiscovery } from './projectDiscovery.js';
 import { ReviewRunner } from './reviewRunner.js';
+import { ReviewGenerator } from './reviewGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -135,8 +136,11 @@ async function startServer() {
   const instanceSpawner = new InstanceSpawner(RALPH_PATH);
   const projectDiscovery = new ProjectDiscovery();
 
-  // Initialize review runner
+  // Initialize review runner (LLM-as-Judge - Feature Set 13)
   const reviewRunner = new ReviewRunner(TARGET_PROJECT_PATH);
+
+  // Initialize review generator (Code vs Docs analysis - Feature Set 14)
+  const reviewGenerator = new ReviewGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
 
   // Track connected clients
   const clients = new Set<WebSocket>();
@@ -530,6 +534,21 @@ ${audienceContent}
           case 'review:cancel':
             reviewRunner.cancel();
             break;
+
+          // ============================================
+          // Review Generator WebSocket Handlers (Feature Set 14)
+          // ============================================
+          case 'review-generator:generate':
+            try {
+              await reviewGenerator.generateReview(message.payload);
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'review-generator:error', payload: { error: err instanceof Error ? err.message : 'Unknown error' } }));
+            }
+            break;
+
+          case 'review-generator:cancel':
+            reviewGenerator.cancel();
+            break;
         }
       } catch (err) {
         console.error('Error handling message:', err);
@@ -656,6 +675,31 @@ ${audienceContent}
 
   reviewRunner.on('cancelled', () => {
     broadcast({ type: 'review:error', payload: { error: 'Review cancelled' } });
+  });
+
+  // Review generator events (Feature Set 14)
+  reviewGenerator.on('status', (status) => {
+    broadcast({ type: 'review-generator:status', payload: status });
+  });
+
+  reviewGenerator.on('output', (text) => {
+    broadcast({ type: 'review-generator:output', payload: { text } });
+  });
+
+  reviewGenerator.on('log', (text) => {
+    broadcast({ type: 'review-generator:log', payload: { text } });
+  });
+
+  reviewGenerator.on('complete', (result) => {
+    broadcast({ type: 'review-generator:complete', payload: result });
+  });
+
+  reviewGenerator.on('error', (error) => {
+    broadcast({ type: 'review-generator:error', payload: { error } });
+  });
+
+  reviewGenerator.on('cancelled', () => {
+    broadcast({ type: 'review-generator:error', payload: { error: 'Review generation cancelled' } });
   });
 
   // REST API endpoints

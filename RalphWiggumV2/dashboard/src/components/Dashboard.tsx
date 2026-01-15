@@ -10,6 +10,7 @@ import { SetupWizard } from './setup/SetupWizard';
 import { OnboardingWizard } from './setup/OnboardingWizard';
 import { PlanGenerator } from './PlanGenerator';
 import { PRDGenerator } from './PRDGenerator';
+import { ReviewGenerator } from './ReviewGenerator';
 import { ExistingDocsViewer } from './ExistingDocsViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +24,21 @@ import {
   FileText,
   ListTodo,
   Github,
+  FileSearch,
+  Home,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export function Dashboard() {
+interface DashboardProps {
+  backendPort?: number;
+}
+
+export function Dashboard({ backendPort }: DashboardProps) {
+  // Build WebSocket URL - use custom port if provided, otherwise use default
+  const wsUrl = backendPort
+    ? `ws://localhost:${backendPort}/ws`
+    : undefined; // undefined uses the default from useWebSocket
+
   const {
     connected,
     loopStatus,
@@ -84,7 +97,15 @@ export function Dashboard() {
     installAgentGlobal,
     installAgentProject,
     installAllAgentsGlobal,
-  } = useWebSocket();
+    // Review generator (Feature Set 14)
+    reviewGeneratorStatus,
+    reviewGeneratorOutput,
+    reviewGeneratorComplete,
+    reviewGeneratorError,
+    generateReview,
+    cancelReviewGenerator,
+    clearReviewGeneratorOutput,
+  } = useWebSocket(wsUrl);
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -152,6 +173,15 @@ export function Dashboard() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '?mode=launcher'}
+              className="gap-2"
+            >
+              <Home className="h-4 w-4" />
+              Launcher
+            </Button>
             {gitStatus.repoName && (
               <a
                 href={`https://github.com/${gitStatus.repoName}`}
@@ -255,10 +285,14 @@ export function Dashboard() {
           {/* Generate Tab */}
           <TabsContent value="generate">
             <Tabs defaultValue="plan" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+              <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
                 <TabsTrigger value="plan" className="gap-2">
                   <ListTodo className="h-4 w-4" />
                   Implementation Plan
+                </TabsTrigger>
+                <TabsTrigger value="review" className="gap-2">
+                  <FileSearch className="h-4 w-4" />
+                  Code Review
                 </TabsTrigger>
                 <TabsTrigger value="prd" className="gap-2">
                   <FileText className="h-4 w-4" />
@@ -283,6 +317,18 @@ export function Dashboard() {
                     })
                   }
                   onClearOutput={clearPlanOutput}
+                />
+              </TabsContent>
+
+              <TabsContent value="review">
+                <ReviewGenerator
+                  reviewStatus={reviewGeneratorStatus}
+                  reviewOutput={reviewGeneratorOutput}
+                  reviewComplete={reviewGeneratorComplete}
+                  reviewError={reviewGeneratorError}
+                  onGenerateReview={generateReview}
+                  onCancelReview={cancelReviewGenerator}
+                  onClearOutput={clearReviewGeneratorOutput}
                 />
               </TabsContent>
 
