@@ -73,3 +73,52 @@ Verification checklist items:
 | v0.0.5 | Sync tasks.json with IMPLEMENTATION_PLAN.md |
 | v0.0.6 | Add tasks.json for progress tracking |
 | v0.0.7 | Feature Set 11: Launcher Instance Spawning Fix |
+| v0.0.8 | All 85/85 tasks complete - Feature Sets 12-13 |
+
+---
+
+## Session: 2026-01-15 (Feature Sets 12-13)
+
+### What Was Implemented
+
+#### Feature Set 12: File Browser for Project Selection (Tasks 83-89)
+- Created `launcher:browse` WebSocket endpoint for directory listing
+- Created `FileBrowser.tsx` component with folder navigation
+- Added Windows drive letter support (C:, D:, etc.)
+- Added breadcrumb navigation for path traversal
+- Filtered to show only directories
+- Highlighted git repos and Ralph-ready directories
+- Integrated file browser into AddProjectDialog with tabbed interface
+
+#### Feature Set 13: LLM-as-Judge Review System (Tasks 90-96)
+- Created `ReviewRunner` class in `server/reviewRunner.ts` using Claude CLI
+- Added `ReviewConfig`, `ReviewResult`, and related types to `types/index.ts`
+- Added `review:run` and `review:cancel` WebSocket handlers
+- Created `ReviewPanel.tsx` component with preset criteria and results display
+- Added review criteria templates for UI tasks in PROMPT_build.md
+- Added optional post-task review hook in loop.sh (ENABLE_REVIEW=true)
+
+### Key Decisions
+
+1. **File Browser Architecture**: Tabbed interface with Browse, Manual, and Discover modes
+   - Browse mode is default for better UX
+   - Selection from browse sets path in manual input
+
+2. **LLM Review Integration**: Modular approach via WebSocket handlers
+   - ReviewRunner uses Claude CLI like PlanGenerator
+   - Uses haiku model for fast reviews
+   - Hook point in loop.sh for custom review scripts
+
+### Completion Status
+
+**All 85/85 tasks complete (100%)**
+
+All 13 Feature Sets implemented:
+- Feature Sets 1-4: Core dashboard fixes
+- Feature Set 5: Agent installation
+- Feature Sets 6-8: Dependency checker, config handling, docs viewer
+- Feature Set 9: Project launcher
+- Feature Set 10: Loop health monitoring
+- Feature Set 11: Launcher instance spawning fix
+- Feature Set 12: File browser for project selection
+- Feature Set 13: LLM-as-Judge review system
