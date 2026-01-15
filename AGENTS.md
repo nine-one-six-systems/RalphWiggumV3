@@ -38,18 +38,14 @@ npm run preview
 Run these after implementing to get immediate feedback:
 
 ```bash
-# TypeScript check
-npm run typecheck
-# or: npx tsc --noEmit
-
-# Run tests
-npm test
+# TypeScript check (npm run typecheck not defined)
+npx tsc --noEmit
 
 # Lint
 npm run lint
 
 # All checks
-npm run typecheck && npm test && npm run lint
+npx tsc --noEmit && npm run lint
 ```
 
 ## Project Structure
@@ -129,8 +125,12 @@ CLAUDE_MODEL_FLAG=true
 
 ## Codebase Patterns
 
-[Ralph will add learnings here as patterns are discovered]
+- Agent files use YAML frontmatter for name/description extraction
+- WebSocket pattern: Type -> Server Handler -> Hook State -> UI
+- Pre-existing lint errors (unused vars in catch blocks) are not blockers
 
 ## Operational Learnings
 
-[Ralph will add learnings here about how to run/build the project]
+- No test framework configured (`npm test` not available)
+- TypeScript check: use `npx tsc --noEmit` (no typecheck script defined)
+- No git remote configured - need `git remote add origin <url>` before push

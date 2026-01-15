@@ -10,3 +10,13 @@ Entries are append-only - never delete, only add.
 - Tip: Use SLC releases to ship value incrementally
 ---
 
+---
+[2026-01-15] Agent Installation Feature Set Complete
+- Pattern: Most features in Releases 1-3 were already implemented, needed systematic verification
+- Pattern: Agent installation follows the established WebSocket message pattern: add type, handler, state, UI
+- Gotcha: The dashboard's npm run typecheck script doesn't exist - use `npx tsc --noEmit` instead
+- Gotcha: Pre-existing lint errors in the codebase (unused vars, case block declarations) - not blockers
+- Tip: YAML frontmatter in agent .md files enables name/description parsing for the UI
+- Tip: No git remote configured - push will need `git remote add origin <url>` first
+---
+
