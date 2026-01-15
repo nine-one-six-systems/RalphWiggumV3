@@ -4,7 +4,7 @@
 
 - **Date**: 2026-01-15
 - **Mode**: Build mode (automated iteration)
-- **Tags Created**: v0.0.4
+- **Tags Created**: v0.0.4, v0.0.5, v0.0.6
 
 ## What Was Implemented
 
@@ -70,3 +70,5 @@ Verification checklist items:
 | v0.0.2 | Core features |
 | v0.0.3 | Feature Set 9 (Project Launcher) |
 | v0.0.4 | TypeScript fixes and Loop Health Monitoring |
+| v0.0.5 | Sync tasks.json with IMPLEMENTATION_PLAN.md |
+| v0.0.6 | Add tasks.json for progress tracking |

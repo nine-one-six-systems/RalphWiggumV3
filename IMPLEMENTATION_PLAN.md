@@ -4,7 +4,7 @@
 
 Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integration, task parsing, cross-platform support, agent management, and more.
 
-**Status**: 63/63 tasks complete (100%) - Includes Feature Set 10
+**Status**: 63/73 tasks complete (86%) - Feature Set 11 in progress
 
 ---
 
@@ -149,3 +149,28 @@ Based on principles from snarktank/ralph and ghuntley/how-to-ralph-wiggum.
 - [x] Task 76: Add `detect_stuck_loop()` with consecutive failure tracking
 - [x] Task 77: Add `log_health_metrics()` to track iteration stats to ralph-health.log
 - [x] Task 78: Integrate health functions into main loop with graceful warnings
+
+---
+
+## Release 6: Launcher Fixes & File Browser
+
+### Feature Set 11: Launcher Instance Spawning Fix
+
+The launcher crashes when starting instances because `instanceSpawner.ts` tries to run `index.js` but the server is TypeScript.
+
+- [ ] Task 79: Fix instanceSpawner.ts to use tsx for TypeScript execution
+- [ ] Task 80: Add error logging to capture spawn failures with details
+- [ ] Task 81: Test launcher instance spawning on Windows
+- [ ] Task 82: Add instance health check before marking as started
+
+### Feature Set 12: File Browser for Project Selection
+
+Add file browser to launcher for easier project path selection.
+
+- [ ] Task 83: Create server endpoint `launcher:browse` to list directories
+- [ ] Task 84: Create FileBrowser.tsx component with folder navigation
+- [ ] Task 85: Add FileBrowser to AddProjectDialog.tsx
+- [ ] Task 86: Handle Windows drive letters (C:, D:, etc.) in file browser
+- [ ] Task 87: Add breadcrumb navigation in file browser
+- [ ] Task 88: Filter to show only directories (not files)
+- [ ] Task 89: Highlight directories that are git repos or Ralph-ready
