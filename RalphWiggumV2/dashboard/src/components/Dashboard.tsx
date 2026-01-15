@@ -218,9 +218,8 @@ export function Dashboard() {
             <ExistingDocsViewer
               projectConfig={projectConfig}
               onReadFile={readConfigFile}
-              onNavigateToGenerate={(tab) => {
+              onNavigateToGenerate={() => {
                 setActiveTab('generate');
-                // The inner tabs will default to the right one based on the tab parameter
               }}
               previewDoc={configPreviewDoc}
               isLoadingPreview={configPreviewLoading}

@@ -150,6 +150,21 @@ export interface ConfigMessage extends WSMessage {
   payload: ProjectConfig;
 }
 
+export interface ConfigSavedMessage extends WSMessage {
+  type: 'config:saved';
+  payload: {
+    file: string;
+  };
+}
+
+export interface ConfigContentMessage extends WSMessage {
+  type: 'config:content';
+  payload: {
+    file: string;
+    content: string;
+  };
+}
+
 export interface AgentsUpdateMessage extends WSMessage {
   type: 'agents:update';
   payload: {
@@ -232,6 +247,8 @@ export type ServerMessage =
   | TasksMessage
   | GitMessage
   | ConfigMessage
+  | ConfigSavedMessage
+  | ConfigContentMessage
   | AgentsUpdateMessage
   | AgentsListResultMessage
   | RulesListResultMessage
@@ -295,6 +312,10 @@ export interface WriteConfigCommand {
     file: string;
     content: string;
   };
+}
+
+export interface RefreshConfigCommand {
+  type: 'config:refresh';
 }
 
 export interface ToggleAgentCommand {
@@ -596,6 +617,7 @@ export type ClientCommand =
   | StopLoopCommand
   | ReadConfigCommand
   | WriteConfigCommand
+  | RefreshConfigCommand
   | ToggleAgentCommand
   | ListAgentsCommand
   | ListRulesCommand

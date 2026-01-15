@@ -1,30 +1,33 @@
 ## Build & Run
 
-Succinct rules for how to BUILD the project:
-
-[Replace with your project-specific build commands]
-- Build: `[your build command]`
-- Run: `[your run command]`
-- Dev server: `[your dev command]`
+- Build: `cd dashboard && npm run build`
+- Dev server: `cd dashboard && npm run dev`
+- Server only: `cd dashboard && npx tsx server/index.ts`
 
 ## Validation
 
 Run these after implementing to get immediate feedback:
 
-- Tests: `[your test command]`
-- Typecheck: `[your typecheck command]`
-- Lint: `[your lint command]`
+- Typecheck: `cd dashboard && npx tsc --noEmit`
+- Lint: `cd dashboard && npm run lint`
+- Build check: `cd dashboard && npm run build`
 
 ## Operational Notes
 
-Succinct learnings about how to RUN the project:
-
-[Replace with project-specific operational notes]
+- Dashboard is a React+TypeScript frontend with Express/WebSocket backend
+- Frontend runs on port 5173 (Vite dev server)
+- Backend runs on port 3001 (WebSocket server)
+- Use `?mode=launcher` URL param to access project launcher
 
 ### Codebase Patterns
 
-[Ralph will add learnings here as patterns are discovered]
+- WebSocket messages follow pattern: `domain:action` (e.g., `loop:start`, `config:update`)
+- Server handlers in `dashboard/server/index.ts`
+- React hooks in `dashboard/src/hooks/`
+- UI components use Radix UI primitives from `dashboard/src/components/ui/`
 
 ## Operational Learnings
 
-[Ralph will add learnings here about how to run/build the project]
+- Pre-existing lint warnings exist (unused vars) but don't block functionality
+- No git remote configured - push commands may fail but local commits work
+- File watchers use chokidar for efficient filesystem monitoring

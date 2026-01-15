@@ -128,6 +128,194 @@ if [[ "$OSTYPE" == "msys"* ]] || [[ "$OSTYPE" == "cygwin"* ]] || [[ "$OSTYPE" ==
     MODEL_FLAG="--model opus"
 fi
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Health Monitoring Functions (based on snarktank/ralph & ghuntley/how-to-ralph)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+HEALTH_LOG="ralph-health.log"
+CONSECUTIVE_FAILURES=0
+LAST_TASK_COUNT=0
+NO_PROGRESS_ITERATIONS=0
+
+# Check if AGENTS.md has real validation commands (not placeholders)
+check_agents_config() {
+    local agents_file="AGENTS.md"
+
+    if [ ! -f "$agents_file" ]; then
+        echo "⚠️  Warning: AGENTS.md not found"
+        echo "   Create AGENTS.md with validation commands for backpressure"
+        return 1
+    fi
+
+    # Check for placeholder patterns
+    if grep -q '\[your.*command\]' "$agents_file" 2>/dev/null; then
+        echo "⚠️  Warning: AGENTS.md contains placeholder commands"
+        echo "   Replace [your ...] placeholders with real commands:"
+        echo "   - Typecheck: npx tsc --noEmit"
+        echo "   - Lint: npm run lint"
+        echo "   - Tests: npm test"
+        echo ""
+        read -p "Continue anyway? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting. Configure AGENTS.md first."
+            exit 1
+        fi
+        return 1
+    fi
+
+    # Check for validation section
+    if ! grep -q "## Validation" "$agents_file" 2>/dev/null; then
+        echo "⚠️  Warning: AGENTS.md missing ## Validation section"
+        return 1
+    fi
+
+    echo "✓ AGENTS.md validation commands configured"
+    return 0
+}
+
+# Parse last iteration's output for error patterns
+check_iteration_health() {
+    local log_file="${1:-ralph.log}"
+    local error_count=0
+
+    if [ ! -f "$log_file" ]; then
+        return 0
+    fi
+
+    # Get last 500 lines of log for this iteration's analysis
+    local recent_output
+    recent_output=$(tail -500 "$log_file" 2>/dev/null || cat "$log_file")
+
+    # Count error patterns
+    local ts_errors build_errors test_failures general_errors
+
+    # TypeScript errors (TS followed by digits)
+    ts_errors=$(echo "$recent_output" | grep -cE "TS[0-9]+:" 2>/dev/null || echo 0)
+
+    # Build/compile errors
+    build_errors=$(echo "$recent_output" | grep -ciE "(error:|Error:|ERROR|ENOENT|Cannot find|Module not found)" 2>/dev/null || echo 0)
+
+    # Test failures
+    test_failures=$(echo "$recent_output" | grep -ciE "(FAIL|failed|✗|✖)" 2>/dev/null || echo 0)
+
+    # General errors (excluding false positives)
+    general_errors=$(echo "$recent_output" | grep -ciE "^error" 2>/dev/null || echo 0)
+
+    error_count=$((ts_errors + build_errors + test_failures + general_errors))
+
+    if [ "$error_count" -gt 5 ]; then
+        echo "⚠️  High error count detected: ~$error_count errors"
+        if [ "$ts_errors" -gt 0 ]; then
+            echo "   - TypeScript errors: $ts_errors"
+        fi
+        if [ "$test_failures" -gt 0 ]; then
+            echo "   - Test failures: $test_failures"
+        fi
+        CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
+        return 1
+    else
+        CONSECUTIVE_FAILURES=0
+        return 0
+    fi
+}
+
+# Count completed tasks in IMPLEMENTATION_PLAN.md
+count_completed_tasks() {
+    local plan_file="IMPLEMENTATION_PLAN.md"
+
+    if [ ! -f "$plan_file" ]; then
+        echo 0
+        return
+    fi
+
+    # Count checked boxes [x] and completed emoji markers
+    local count
+    count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]|✅" "$plan_file" 2>/dev/null || echo 0)
+    echo "$count"
+}
+
+# Detect stuck loops (no progress over multiple iterations)
+detect_stuck_loop() {
+    local current_tasks
+    current_tasks=$(count_completed_tasks)
+
+    if [ "$current_tasks" -eq "$LAST_TASK_COUNT" ]; then
+        NO_PROGRESS_ITERATIONS=$((NO_PROGRESS_ITERATIONS + 1))
+    else
+        NO_PROGRESS_ITERATIONS=0
+        LAST_TASK_COUNT=$current_tasks
+    fi
+
+    # Warning at 3 iterations with no progress
+    if [ "$NO_PROGRESS_ITERATIONS" -ge 3 ]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "⚠️  STUCK LOOP DETECTED"
+        echo "   No task completions in $NO_PROGRESS_ITERATIONS iterations"
+        echo "   Completed tasks: $current_tasks"
+        echo ""
+        echo "   Suggestions:"
+        echo "   - Check ralph.log for repeating errors"
+        echo "   - Consider regenerating the plan: ./loop.sh plan"
+        echo "   - Review IMPLEMENTATION_PLAN.md for unclear tasks"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    fi
+
+    # Critical at 5 consecutive failures
+    if [ "$CONSECUTIVE_FAILURES" -ge 5 ]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "🛑 CRITICAL: 5+ consecutive failures"
+        echo "   Consider pausing to investigate"
+        echo ""
+        read -p "Continue? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Paused. Review ralph.log and IMPLEMENTATION_PLAN.md"
+            exit 1
+        fi
+        CONSECUTIVE_FAILURES=0  # Reset after user acknowledgment
+    fi
+}
+
+# Log health metrics for this iteration
+log_health_metrics() {
+    local iteration=$1
+    local duration=$2
+    local start_tasks=$3
+    local end_tasks=$4
+
+    local timestamp
+    timestamp=$(date -Iseconds 2>/dev/null || date "+%Y-%m-%dT%H:%M:%S")
+
+    local tasks_completed=$((end_tasks - start_tasks))
+
+    # Append to health log
+    cat >> "$HEALTH_LOG" << EOF
+---
+[$timestamp] Iteration $iteration
+- Duration: ${duration}s
+- Tasks at start: $start_tasks
+- Tasks at end: $end_tasks
+- Tasks completed: $tasks_completed
+- Consecutive failures: $CONSECUTIVE_FAILURES
+- No-progress streak: $NO_PROGRESS_ITERATIONS
+---
+EOF
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Pre-flight Checks
+# ═══════════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo "Running pre-flight checks..."
+check_agents_config
+LAST_TASK_COUNT=$(count_completed_tasks)
+echo "✓ Starting with $LAST_TASK_COUNT completed tasks"
+echo ""
+
 # Main loop
 while true; do
     if [ $MAX_ITERATIONS -gt 0 ] && [ $ITERATION -ge $MAX_ITERATIONS ]; then
@@ -143,6 +331,10 @@ while true; do
         fi
         break
     fi
+
+    # Track timing and task count for health metrics
+    ITERATION_START=$(date +%s 2>/dev/null || echo 0)
+    TASKS_AT_START=$(count_completed_tasks)
 
     # Run Ralph iteration with selected prompt
     # -p: Headless mode (non-interactive, reads from stdin)
@@ -179,6 +371,20 @@ while true; do
             --verbose \
             2>&1 | tee -a "$OUTPUT_LOG"
     fi
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Post-iteration health checks
+    # ═══════════════════════════════════════════════════════════════════════════
+    ITERATION_END=$(date +%s 2>/dev/null || echo 0)
+    ITERATION_DURATION=$((ITERATION_END - ITERATION_START))
+    TASKS_AT_END=$(count_completed_tasks)
+
+    # Run health checks
+    check_iteration_health "$OUTPUT_LOG"
+    detect_stuck_loop
+
+    # Log metrics
+    log_health_metrics "$ITERATION" "$ITERATION_DURATION" "$TASKS_AT_START" "$TASKS_AT_END"
 
     # Check for completion signal
     if grep -q "ALL_TASKS_COMPLETE" "$OUTPUT_LOG" 2>/dev/null; then
