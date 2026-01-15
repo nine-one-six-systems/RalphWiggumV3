@@ -16,6 +16,44 @@
 
 9999. Create tests to verify implementation meets acceptance criteria and include both conventional tests (behavior, performance, correctness) and perceptual quality tests (for subjective criteria, see src/lib patterns).
 
+## Review Criteria Templates for UI Tasks
+
+For UI/UX work, use these review criteria templates with the LLM-as-Judge system:
+
+### UX Clarity
+- "The interface is clear, intuitive, and provides obvious next steps for users"
+- "All interactive elements are discoverable without instruction"
+
+### Error Handling
+- "Error messages are user-friendly, specific, and provide actionable guidance"
+- "Error states are visually distinct and clearly communicate what went wrong"
+
+### Visual Hierarchy
+- "Layout demonstrates clear visual hierarchy with appropriate emphasis on key elements"
+- "Primary actions are visually prominent, secondary actions are appropriately subdued"
+
+### Loading States
+- "Loading states provide appropriate feedback during async operations"
+- "Skeleton loaders or progress indicators match content layout"
+
+### Accessibility
+- "Content follows accessibility best practices with proper contrast, labels, and focus states"
+- "Keyboard navigation is logical and all interactive elements are reachable"
+
+### Tone & Copy
+- "The text uses a warm, professional tone appropriate for the target audience"
+- "Microcopy is helpful, not condescending, and guides users effectively"
+
+### Completeness
+- "All required information is present and no placeholder content remains"
+- "Empty states have helpful content explaining next actions"
+
+### Responsiveness
+- "Layout adapts appropriately to different viewport sizes"
+- "Touch targets are appropriately sized for mobile users"
+
+Use these criteria when running perceptual quality reviews on UI implementations.
+
 99999. Important: When authoring documentation, capture the why — tests and implementation importance.
 
 999999. Important: Single sources of truth, no migrations/adapters. If tests unrelated to your work fail, resolve them as part of the increment.

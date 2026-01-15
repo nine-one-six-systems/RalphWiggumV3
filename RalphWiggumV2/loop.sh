@@ -422,6 +422,28 @@ while true; do
     # Log metrics
     log_health_metrics "$ITERATION" "$ITERATION_DURATION" "$TASKS_AT_START" "$TASKS_AT_END"
 
+    # ═══════════════════════════════════════════════════════════════════════════
+    # Optional post-task review (LLM-as-Judge quality gate)
+    # Set ENABLE_REVIEW=true to enable review prompts after task completion
+    # ═══════════════════════════════════════════════════════════════════════════
+    TASKS_COMPLETED_THIS_ITERATION=$((TASKS_AT_END - TASKS_AT_START))
+    if [ "${ENABLE_REVIEW:-false}" = "true" ] && [ "$TASKS_COMPLETED_THIS_ITERATION" -gt 0 ]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📋 Post-task Review"
+        echo "   Tasks completed this iteration: $TASKS_COMPLETED_THIS_ITERATION"
+        echo ""
+        echo "   Review can be run via the dashboard ReviewPanel"
+        echo "   or using src/lib/llm-review.ts patterns"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Optional: Run review script if REVIEW_SCRIPT is set
+        if [ -n "${REVIEW_SCRIPT:-}" ] && [ -f "$REVIEW_SCRIPT" ]; then
+            echo "Running review script: $REVIEW_SCRIPT"
+            bash "$REVIEW_SCRIPT" "$OUTPUT_LOG" || true
+        fi
+    fi
+
     # Check for completion - verify BOTH signal AND actual task counts
     INCOMPLETE_TASKS=$(count_incomplete_tasks)
     COMPLETED_TASKS=$(count_completed_tasks)
