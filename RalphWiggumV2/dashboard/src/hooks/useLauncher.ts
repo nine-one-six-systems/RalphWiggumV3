@@ -11,6 +11,12 @@ import type {
   BrowseResult,
 } from '@/types';
 
+interface ProjectInitResult {
+  projectId: string;
+  created: string[];
+  skipped: string[];
+}
+
 interface UseLauncherReturn {
   connected: boolean;
   // Project state
@@ -25,12 +31,16 @@ interface UseLauncherReturn {
   // Browse state
   browseResult: BrowseResult | null;
   browsing: boolean;
+  // Init state
+  lastInitResult: ProjectInitResult | null;
+  initializing: boolean;
   // Error state
   error: string | null;
   // Project operations
   listProjects: () => void;
   addProject: (path: string) => void;
   removeProject: (projectId: string) => void;
+  initializeProject: (projectId: string, templates?: string[]) => void;
   // Instance operations
   listInstances: () => void;
   spawnInstance: (projectId: string) => void;
@@ -41,6 +51,7 @@ interface UseLauncherReturn {
   browseDirectory: (path: string) => void;
   // Error handling
   clearError: () => void;
+  clearInitResult: () => void;
   // Utility functions
   getInstanceForProject: (projectId: string) => LauncherInstance | undefined;
   isInstanceRunning: (projectId: string) => boolean;
@@ -67,6 +78,10 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
   // Browse state
   const [browseResult, setBrowseResult] = useState<BrowseResult | null>(null);
   const [browsing, setBrowsing] = useState(false);
+
+  // Init state
+  const [lastInitResult, setLastInitResult] = useState<ProjectInitResult | null>(null);
+  const [initializing, setInitializing] = useState(false);
 
   // Error state
   const [error, setError] = useState<string | null>(null);
@@ -182,6 +197,17 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
             setInstancesLoading(false);
             setDiscovering(false);
             setBrowsing(false);
+            setInitializing(false);
+            break;
+
+          case 'project:init:result':
+            setLastInitResult(message.payload);
+            setInitializing(false);
+            break;
+
+          case 'project:init:error':
+            setError(message.payload.error);
+            setInitializing(false);
             break;
         }
       } catch {
@@ -292,9 +318,25 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
     }
   }, []);
 
+  // Initialize project with Ralph files
+  const initializeProject = useCallback((projectId: string, templates?: string[]) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setInitializing(true);
+      setError(null);
+      wsRef.current.send(JSON.stringify({
+        type: 'project:init',
+        payload: { projectId, templates }
+      }));
+    }
+  }, []);
+
   // Error handling
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  const clearInitResult = useCallback(() => {
+    setLastInitResult(null);
   }, []);
 
   // Utility functions
@@ -316,16 +358,20 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
     discovering,
     browseResult,
     browsing,
+    lastInitResult,
+    initializing,
     error,
     listProjects,
     addProject,
     removeProject,
+    initializeProject,
     listInstances,
     spawnInstance,
     stopInstance,
     discoverProjects,
     browseDirectory,
     clearError,
+    clearInitResult,
     getInstanceForProject,
     isInstanceRunning,
   };

@@ -3,7 +3,7 @@
  * Displays project cards and provides actions for managing projects/instances
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLauncher } from '@/hooks/useLauncher';
 import { ProjectCard } from './ProjectCard';
 import { AddProjectDialog } from './AddProjectDialog';
@@ -19,6 +19,8 @@ import {
   FolderOpen,
   Loader2,
   LayoutDashboard,
+  CheckCircle,
+  X,
 } from 'lucide-react';
 
 export function LauncherHome() {
@@ -27,28 +29,46 @@ export function LauncherHome() {
     projects,
     projectsLoading,
     instances,
-    instancesLoading,
     discoveredProjects,
     discovering,
     browseResult,
     browsing,
+    lastInitResult,
     error,
     listProjects,
     addProject,
     removeProject,
+    initializeProject,
     spawnInstance,
     stopInstance,
     discoverProjects,
     browseDirectory,
     clearError,
+    clearInitResult,
     getInstanceForProject,
     isInstanceRunning,
   } = useLauncher();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [spawningProjectId, setSpawningProjectId] = useState<string | null>(null);
+  const [initializingProjectId, setInitializingProjectId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   // Track spawning state per project to prevent double-spawns
   const spawningRef = useRef<Set<string>>(new Set());
+
+  // Handle init result
+  useEffect(() => {
+    if (lastInitResult && lastInitResult.created.length > 0) {
+      const project = projects.find(p => p.id === lastInitResult.projectId);
+      const projectName = project?.name || 'Project';
+      setSuccessMessage(`Created ${lastInitResult.created.join(', ')} in ${projectName}`);
+      setInitializingProjectId(null);
+      clearInitResult();
+      // Auto-hide after 5 seconds
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastInitResult, projects, clearInitResult]);
 
   const handleOpenDashboard = async (projectId: string) => {
     // Prevent double-spawns
@@ -113,6 +133,11 @@ export function LauncherHome() {
   const handleAddProject = (path: string) => {
     addProject(path);
     setIsAddDialogOpen(false);
+  };
+
+  const handleInitialize = (projectId: string) => {
+    setInitializingProjectId(projectId);
+    initializeProject(projectId);
   };
 
   const runningCount = instances.length;
@@ -198,6 +223,23 @@ export function LauncherHome() {
         </div>
       )}
 
+      {/* Success Banner (for init results) */}
+      {successMessage && (
+        <div className="bg-green-500/15 border-b border-green-500/30">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm">{successMessage}</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setSuccessMessage(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {totalCount === 0 ? (
@@ -220,18 +262,20 @@ export function LauncherHome() {
             {projects.map((project) => {
               const instance = getInstanceForProject(project.id);
               const isSpawning = spawningProjectId === project.id;
-              const isRunning = !!instance;
-              
+              const isProjectInitializing = initializingProjectId === project.id;
+
               return (
                 <ProjectCard
                   key={project.id}
                   project={project}
                   instance={instance}
                   isSpawning={isSpawning}
+                  isInitializing={isProjectInitializing}
                   onOpenDashboard={handleOpenDashboard}
                   onStartInstance={handleStartInstance}
                   onStopInstance={handleStopInstance}
                   onRemoveProject={handleRemoveProject}
+                  onInitialize={handleInitialize}
                 />
               );
             })}

@@ -16,26 +16,31 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
+  Settings,
 } from 'lucide-react';
 
 interface ProjectCardProps {
   project: LauncherProject;
   instance?: LauncherInstance;
   isSpawning: boolean;
+  isInitializing?: boolean;
   onOpenDashboard: (projectId: string) => void;
   onStartInstance: (projectId: string) => void;
   onStopInstance: (projectId: string) => void;
   onRemoveProject: (projectId: string) => void;
+  onInitialize?: (projectId: string) => void;
 }
 
 export function ProjectCard({
   project,
   instance,
   isSpawning,
+  isInitializing,
   onOpenDashboard,
   onStartInstance,
   onStopInstance,
   onRemoveProject,
+  onInitialize,
 }: ProjectCardProps) {
   const isRunning = !!instance;
 
@@ -81,9 +86,10 @@ export function ProjectCard({
 
   const handleOpenDashboard = () => {
     if (isRunning && instance) {
-      // Open the dashboard frontend with the backend port as a query param
-      // The frontend will connect to the specified backend WebSocket port
-      window.open(`http://localhost:5173?backend=${instance.backendPort}`, '_blank');
+      // Open the dashboard using the instance's actual ports
+      // frontendPort is the Vite dev server, backendPort is the Express/WebSocket server
+      const frontendPort = instance.frontendPort || 5173;
+      window.open(`http://localhost:${frontendPort}?backend=${instance.backendPort}`, '_blank');
     } else {
       onOpenDashboard(project.id);
     }
@@ -141,7 +147,7 @@ export function ProjectCard({
               variant="default"
               size="sm"
               onClick={() => onStartInstance(project.id)}
-              disabled={isSpawning}
+              disabled={isSpawning || isInitializing}
               className="flex items-center gap-1"
             >
               {isSpawning ? (
@@ -151,11 +157,27 @@ export function ProjectCard({
               )}
               {isSpawning ? 'Starting...' : 'Start'}
             </Button>
+            {!project.isRalphReady && onInitialize && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onInitialize(project.id)}
+                disabled={isSpawning || isInitializing}
+                className="flex items-center gap-1"
+              >
+                {isInitializing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Settings className="h-4 w-4" />
+                )}
+                {isInitializing ? 'Setting up...' : 'Setup'}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
               onClick={() => onRemoveProject(project.id)}
-              disabled={isSpawning}
+              disabled={isSpawning || isInitializing}
               className="flex items-center gap-1"
             >
               <Trash2 className="h-4 w-4" />

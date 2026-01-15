@@ -18,6 +18,7 @@ import { InstanceSpawner } from './instanceSpawner.js';
 import { ProjectDiscovery } from './projectDiscovery.js';
 import { ReviewRunner } from './reviewRunner.js';
 import { ReviewGenerator } from './reviewGenerator.js';
+import { TemplateManager, type TemplateName } from './templateManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -135,6 +136,7 @@ async function startServer() {
   const projectRegistry = new ProjectRegistry();
   const instanceSpawner = new InstanceSpawner(RALPH_PATH);
   const projectDiscovery = new ProjectDiscovery();
+  const templateManager = new TemplateManager();
 
   // Initialize review runner (LLM-as-Judge - Feature Set 13)
   const reviewRunner = new ReviewRunner(TARGET_PROJECT_PATH);
@@ -520,6 +522,49 @@ ${audienceContent}
             }
             break;
 
+          case 'project:init':
+            try {
+              const projectId = message.payload?.projectId;
+              const templates = message.payload?.templates as TemplateName[] | undefined;
+
+              if (!projectId) {
+                throw new Error('projectId is required');
+              }
+
+              const project = await projectRegistry.getProject(projectId);
+              if (!project) {
+                throw new Error('Project not found');
+              }
+
+              // Initialize with specified templates or default (AGENTS.md, CLAUDE.md)
+              const result = await templateManager.initializeProject(
+                project.path,
+                templates || ['AGENTS.md', 'CLAUDE.md']
+              );
+
+              // Refresh Ralph-ready status after initialization
+              await projectRegistry.refreshRalphStatus(projectId);
+
+              ws.send(JSON.stringify({
+                type: 'project:init:result',
+                payload: {
+                  projectId,
+                  created: result.created,
+                  skipped: result.skipped
+                }
+              }));
+
+              // Broadcast updated project list
+              const updatedProjects = await projectRegistry.listProjects();
+              broadcast({ type: 'launcher:projects:list', payload: updatedProjects });
+            } catch (err) {
+              ws.send(JSON.stringify({
+                type: 'project:init:error',
+                payload: { error: `Failed to initialize project: ${err instanceof Error ? err.message : 'Unknown error'}` }
+              }));
+            }
+            break;
+
           // ============================================
           // Review WebSocket Handlers
           // ============================================
@@ -654,6 +699,14 @@ ${audienceContent}
     broadcast({ type: 'launcher:instance:crashed', payload: data });
     const instances = instanceSpawner.listInstances();
     broadcast({ type: 'launcher:instances:list', payload: instances });
+  });
+
+  instanceSpawner.on('initialized', async (data: { projectId: string; created: string[] }) => {
+    // Refresh Ralph-ready status and broadcast the update
+    await projectRegistry.refreshRalphStatus(data.projectId);
+    broadcast({ type: 'project:init:result', payload: data });
+    const projects = await projectRegistry.listProjects();
+    broadcast({ type: 'launcher:projects:list', payload: projects });
   });
 
   // Review runner events
