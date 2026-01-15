@@ -4,7 +4,7 @@
 
 Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integration, task parsing, cross-platform support, agent management, and more.
 
-**Status**: 42/42 tasks complete (100%)
+**Status**: 42/53 tasks complete (79%) - Release 4 pending
 
 ---
 
@@ -88,7 +88,7 @@ Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integrat
 
 ---
 
-## Release 4: Project Launcher (Multi-Instance Support)
+## Release 4: Project Launcher (Multi-Instance Support) 🔄 IN PROGRESS
 
 ### Feature Set 9: Project Launcher (spec: 09-project-launcher.md)
 
@@ -124,8 +124,8 @@ After each release, verify:
 - Each task references its spec file for detailed implementation
 - Checkbox format enables dashboard task tracking
 - SLC releases can be shipped independently
-- Release 4 (Project Launcher) is deferred - complex multi-instance feature
+- Release 4 (Project Launcher) is now active - ready for implementation
 
 ## Remaining Priority Work
 
-1. **Feature Set 9: Project Launcher** - Multi-instance support (Release 4) - deferred
+1. **Feature Set 9: Project Launcher** - Multi-instance support (Release 4) - Tasks 63-73 pending
