@@ -257,7 +257,16 @@ export type ServerMessage =
   | DependenciesErrorMessage
   | RepoAgentsResultMessage
   | AgentInstalledMessage
-  | AgentErrorMessage;
+  | AgentErrorMessage
+  | LauncherProjectsListMessage
+  | LauncherProjectAddedMessage
+  | LauncherProjectRemovedMessage
+  | LauncherInstancesListMessage
+  | LauncherInstanceSpawnedMessage
+  | LauncherInstanceStoppedMessage
+  | LauncherInstanceCrashedMessage
+  | LauncherDiscoverResultMessage
+  | LauncherErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -605,4 +614,144 @@ export type ClientCommand =
   | ListRepoAgentsCommand
   | InstallAgentGlobalCommand
   | InstallAgentProjectCommand
-  | InstallAllAgentsGlobalCommand;
+  | InstallAllAgentsGlobalCommand
+  | LauncherListProjectsCommand
+  | LauncherAddProjectCommand
+  | LauncherRemoveProjectCommand
+  | LauncherSpawnInstanceCommand
+  | LauncherStopInstanceCommand
+  | LauncherListInstancesCommand
+  | LauncherDiscoverCommand;
+
+// ============================================================================
+// Project Launcher Types (Feature Set 9)
+// ============================================================================
+
+// Project registered in the launcher
+export interface LauncherProject {
+  id: string;
+  path: string;
+  name: string;
+  addedAt: string;  // ISO date string
+  lastOpened?: string;  // ISO date string
+  isRalphReady: boolean;
+}
+
+// Running dashboard instance
+export interface LauncherInstance {
+  projectId: string;
+  backendPort: number;
+  frontendPort: number;
+  pid: number;
+  startedAt: string;  // ISO date string
+  loopStatus?: {
+    running: boolean;
+    iteration: number;
+    mode: string;
+  };
+}
+
+// Project discovered during auto-discovery scan
+export interface DiscoveredProject {
+  path: string;
+  name: string;
+  isGitRepo: boolean;
+  isRalphReady: boolean;
+  alreadyRegistered: boolean;
+}
+
+// Launcher WebSocket Commands
+export interface LauncherListProjectsCommand {
+  type: 'launcher:projects:list';
+}
+
+export interface LauncherAddProjectCommand {
+  type: 'launcher:projects:add';
+  payload: {
+    path: string;
+  };
+}
+
+export interface LauncherRemoveProjectCommand {
+  type: 'launcher:projects:remove';
+  payload: {
+    projectId: string;
+  };
+}
+
+export interface LauncherSpawnInstanceCommand {
+  type: 'launcher:instance:spawn';
+  payload: {
+    projectId: string;
+  };
+}
+
+export interface LauncherStopInstanceCommand {
+  type: 'launcher:instance:stop';
+  payload: {
+    projectId: string;
+  };
+}
+
+export interface LauncherListInstancesCommand {
+  type: 'launcher:instances:list';
+}
+
+export interface LauncherDiscoverCommand {
+  type: 'launcher:discover';
+}
+
+// Launcher WebSocket Server Messages
+export interface LauncherProjectsListMessage extends WSMessage {
+  type: 'launcher:projects:list';
+  payload: LauncherProject[];
+}
+
+export interface LauncherProjectAddedMessage extends WSMessage {
+  type: 'launcher:project:added';
+  payload: LauncherProject;
+}
+
+export interface LauncherProjectRemovedMessage extends WSMessage {
+  type: 'launcher:project:removed';
+  payload: {
+    projectId: string;
+  };
+}
+
+export interface LauncherInstancesListMessage extends WSMessage {
+  type: 'launcher:instances:list';
+  payload: LauncherInstance[];
+}
+
+export interface LauncherInstanceSpawnedMessage extends WSMessage {
+  type: 'launcher:instance:spawned';
+  payload: LauncherInstance;
+}
+
+export interface LauncherInstanceStoppedMessage extends WSMessage {
+  type: 'launcher:instance:stopped';
+  payload: {
+    projectId: string;
+  };
+}
+
+export interface LauncherInstanceCrashedMessage extends WSMessage {
+  type: 'launcher:instance:crashed';
+  payload: {
+    projectId: string;
+    error: string;
+  };
+}
+
+export interface LauncherDiscoverResultMessage extends WSMessage {
+  type: 'launcher:discover:result';
+  payload: DiscoveredProject[];
+}
+
+export interface LauncherErrorMessage extends WSMessage {
+  type: 'launcher:error';
+  payload: {
+    error: string;
+  };
+}

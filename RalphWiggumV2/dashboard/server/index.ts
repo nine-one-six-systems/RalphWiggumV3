@@ -13,6 +13,9 @@ import { PRDGenerator } from './prdGenerator.js';
 import { ProjectScanner } from './projectScanner.js';
 import { detectProjectRoot, formatProjectInfo, type ProjectRootResult } from './projectRootDetector.js';
 import { checkAllDependencies } from './dependencyChecker.js';
+import { ProjectRegistry } from './projectRegistry.js';
+import { InstanceSpawner } from './instanceSpawner.js';
+import { ProjectDiscovery } from './projectDiscovery.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,6 +59,11 @@ async function startServer() {
   const planGenerator = new PlanGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
   const prdGenerator = new PRDGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
   const projectScanner = new ProjectScanner(TARGET_PROJECT_PATH);
+
+  // Initialize launcher services
+  const projectRegistry = new ProjectRegistry();
+  const instanceSpawner = new InstanceSpawner(RALPH_PATH);
+  const projectDiscovery = new ProjectDiscovery();
 
   // Track connected clients
   const clients = new Set<WebSocket>();
@@ -269,6 +277,96 @@ ${audienceContent}
               ws.send(JSON.stringify({ type: 'agents:error', payload: { error: `Failed to install all agents: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
             }
             break;
+
+          // ============================================
+          // Launcher WebSocket Handlers
+          // ============================================
+          case 'launcher:projects:list':
+            try {
+              const projects = await projectRegistry.listProjects();
+              ws.send(JSON.stringify({ type: 'launcher:projects:list', payload: projects }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to list projects: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:projects:add':
+            try {
+              const newProject = await projectRegistry.addProject(message.payload.path);
+              ws.send(JSON.stringify({ type: 'launcher:project:added', payload: newProject }));
+              // Broadcast updated list to all clients
+              const updatedProjects = await projectRegistry.listProjects();
+              broadcast({ type: 'launcher:projects:list', payload: updatedProjects });
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to add project: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:projects:remove':
+            try {
+              // Stop instance if running
+              if (instanceSpawner.isRunning(message.payload.projectId)) {
+                await instanceSpawner.stopInstance(message.payload.projectId);
+              }
+              await projectRegistry.removeProject(message.payload.projectId);
+              ws.send(JSON.stringify({ type: 'launcher:project:removed', payload: { projectId: message.payload.projectId } }));
+              // Broadcast updated list to all clients
+              const projectsAfterRemove = await projectRegistry.listProjects();
+              broadcast({ type: 'launcher:projects:list', payload: projectsAfterRemove });
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to remove project: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:instance:spawn':
+            try {
+              const project = await projectRegistry.getProject(message.payload.projectId);
+              if (!project) {
+                throw new Error('Project not found');
+              }
+              const instance = await instanceSpawner.spawnInstance(project.id, project.path);
+              await projectRegistry.updateLastOpened(project.id);
+              ws.send(JSON.stringify({ type: 'launcher:instance:spawned', payload: instance }));
+              // Broadcast updated instances list to all clients
+              const instances = instanceSpawner.listInstances();
+              broadcast({ type: 'launcher:instances:list', payload: instances });
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to spawn instance: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:instance:stop':
+            try {
+              await instanceSpawner.stopInstance(message.payload.projectId);
+              ws.send(JSON.stringify({ type: 'launcher:instance:stopped', payload: { projectId: message.payload.projectId } }));
+              // Broadcast updated instances list to all clients
+              const instancesAfterStop = instanceSpawner.listInstances();
+              broadcast({ type: 'launcher:instances:list', payload: instancesAfterStop });
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to stop instance: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:instances:list':
+            try {
+              const runningInstances = instanceSpawner.listInstances();
+              ws.send(JSON.stringify({ type: 'launcher:instances:list', payload: runningInstances }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to list instances: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:discover':
+            try {
+              // Update discovery with current registered projects
+              const registeredProjects = await projectRegistry.listProjects();
+              projectDiscovery.updateRegistered(registeredProjects);
+              const discoveredProjects = await projectDiscovery.discover();
+              ws.send(JSON.stringify({ type: 'launcher:discover:result', payload: discoveredProjects }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to discover projects: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
         }
       } catch (err) {
         console.error('Error handling message:', err);
@@ -363,6 +461,19 @@ ${audienceContent}
     broadcast({ type: 'prd:error', payload: { error: 'PRD generation cancelled' } });
   });
 
+  // Instance spawner events
+  instanceSpawner.on('stopped', (data: { projectId: string }) => {
+    broadcast({ type: 'launcher:instance:stopped', payload: data });
+    const instances = instanceSpawner.listInstances();
+    broadcast({ type: 'launcher:instances:list', payload: instances });
+  });
+
+  instanceSpawner.on('crashed', (data: { projectId: string; error: string }) => {
+    broadcast({ type: 'launcher:instance:crashed', payload: data });
+    const instances = instanceSpawner.listInstances();
+    broadcast({ type: 'launcher:instances:list', payload: instances });
+  });
+
   // REST API endpoints
   app.get('/api/status', (req, res) => {
     res.json({
@@ -420,10 +531,12 @@ ${audienceContent}
   });
 
   // Cleanup on exit
-  process.on('SIGINT', () => {
+  process.on('SIGINT', async () => {
     console.log('Shutting down...');
     fileWatcher.stop();
     loopController.stop();
+    // Stop all spawned instances
+    await instanceSpawner.stopAll();
     server.close();
     process.exit(0);
   });
