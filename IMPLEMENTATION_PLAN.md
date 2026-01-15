@@ -4,7 +4,7 @@
 
 Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integration, task parsing, cross-platform support, agent management, and more.
 
-**Status**: 63/73 tasks complete (86%) - Feature Set 11 in progress
+**Status**: 67/85 tasks complete (79%) - Feature Set 11 complete, Feature Sets 12-13 pending
 
 ---
 
@@ -154,14 +154,14 @@ Based on principles from snarktank/ralph and ghuntley/how-to-ralph-wiggum.
 
 ## Release 6: Launcher Fixes & File Browser
 
-### Feature Set 11: Launcher Instance Spawning Fix
+### Feature Set 11: Launcher Instance Spawning Fix ✅
 
 The launcher crashes when starting instances because `instanceSpawner.ts` tries to run `index.js` but the server is TypeScript.
 
-- [ ] Task 79: Fix instanceSpawner.ts to use tsx for TypeScript execution
-- [ ] Task 80: Add error logging to capture spawn failures with details
-- [ ] Task 81: Test launcher instance spawning on Windows
-- [ ] Task 82: Add instance health check before marking as started
+- [x] Task 79: Fix instanceSpawner.ts to use tsx for TypeScript execution
+- [x] Task 80: Add error logging to capture spawn failures with details
+- [x] Task 81: Test launcher instance spawning on Windows
+- [x] Task 82: Add instance health check before marking as started
 
 ### Feature Set 12: File Browser for Project Selection
 
@@ -174,3 +174,15 @@ Add file browser to launcher for easier project path selection.
 - [ ] Task 87: Add breadcrumb navigation in file browser
 - [ ] Task 88: Filter to show only directories (not files)
 - [ ] Task 89: Highlight directories that are git repos or Ralph-ready
+
+### Feature Set 13: LLM-as-Judge Review System
+
+Build quality gates using LLM reviews for subjective criteria that tests can't catch (UX, tone, aesthetics).
+
+- [ ] Task 90: Implement createReview() in src/lib/llm-review.ts using Claude API
+- [ ] Task 91: Add ReviewConfig and ReviewResult types to types/index.ts
+- [ ] Task 92: Create review criteria templates for UI tasks in PROMPT_build.md
+- [ ] Task 93: Add post-task review step to loop.sh before marking task complete
+- [ ] Task 94: Integrate screenshot capture for visual reviews (optional)
+- [ ] Task 95: Add review:run WebSocket handler to server/index.ts
+- [ ] Task 96: Create ReviewPanel.tsx component to display review results in dashboard

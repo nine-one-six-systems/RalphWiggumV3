@@ -120,7 +120,7 @@ accessibility-expert for WCAG compliance, and qol-ux-expert for UX polish
 
 ## Critical Rules
 
-- **One task per iteration, then exit**
+- **Complete as many tasks as possible per iteration** - don't artificially limit yourself
 - **Tests must pass before committing**
 - **Follow the loaded rule files exactly**—they define project standards
 - **Follow the spec files**—they define feature requirements
@@ -132,9 +132,14 @@ accessibility-expert for WCAG compliance, and qol-ux-expert for UX polish
 
 ## Completion Signal
 
-**When all tasks in IMPLEMENTATION_PLAN.md are complete, output: `ALL_TASKS_COMPLETE`**
+**ONLY output `ALL_TASKS_COMPLETE` when there are ZERO incomplete tasks in IMPLEMENTATION_PLAN.md**
 
-This signals the loop script to stop iterating.
+Before outputting ALL_TASKS_COMPLETE:
+1. Count all `- [ ]` items in IMPLEMENTATION_PLAN.md
+2. If count > 0, DO NOT output ALL_TASKS_COMPLETE - keep working
+3. If count == 0, THEN output ALL_TASKS_COMPLETE
+
+This signals the loop script to stop iterating. Premature completion wastes loop iterations.
 
 ---
 

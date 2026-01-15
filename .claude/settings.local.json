@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(bash ./loop.sh:*)",
-      "Bash(Get-Content -Path \"c:/Users/xsams/RalphWiggumV3/RalphWiggumV2/ralph.log\" -Tail 100 -Wait)"
+      "Bash(Get-Content -Path \"c:/Users/xsams/RalphWiggumV3/RalphWiggumV2/ralph.log\" -Tail 100 -Wait)",
+      "Bash(./loop.sh build:*)",
+      "Bash(git add:*)"
     ]
   }
 }

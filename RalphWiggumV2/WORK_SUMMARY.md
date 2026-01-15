@@ -72,3 +72,4 @@ Verification checklist items:
 | v0.0.4 | TypeScript fixes and Loop Health Monitoring |
 | v0.0.5 | Sync tasks.json with IMPLEMENTATION_PLAN.md |
 | v0.0.6 | Add tasks.json for progress tracking |
+| v0.0.7 | Feature Set 11: Launcher Instance Spawning Fix |

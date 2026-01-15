@@ -231,8 +231,35 @@ count_completed_tasks() {
 
     # Count checked boxes [x] and completed emoji markers
     local count
-    count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]|✅" "$plan_file" 2>/dev/null || echo 0)
+    count=$(grep -cE "^\s*-\s*\[x\]|^\s*-\s*\[X\]" "$plan_file" 2>/dev/null || echo 0)
     echo "$count"
+}
+
+# Count incomplete tasks in IMPLEMENTATION_PLAN.md
+count_incomplete_tasks() {
+    local plan_file="IMPLEMENTATION_PLAN.md"
+
+    if [ ! -f "$plan_file" ]; then
+        echo 0
+        return
+    fi
+
+    # Count unchecked boxes [ ]
+    local count
+    count=$(grep -cE "^\s*-\s*\[ \]" "$plan_file" 2>/dev/null || echo 0)
+    echo "$count"
+}
+
+# Check if truly all tasks are complete
+all_tasks_complete() {
+    local incomplete
+    incomplete=$(count_incomplete_tasks)
+
+    if [ "$incomplete" -eq 0 ]; then
+        return 0  # True - all complete
+    else
+        return 1  # False - tasks remain
+    fi
 }
 
 # Detect stuck loops (no progress over multiple iterations)
@@ -313,8 +340,17 @@ echo ""
 echo "Running pre-flight checks..."
 check_agents_config
 LAST_TASK_COUNT=$(count_completed_tasks)
-echo "✓ Starting with $LAST_TASK_COUNT completed tasks"
+REMAINING_TASKS=$(count_incomplete_tasks)
+echo "✓ Starting with $LAST_TASK_COUNT completed tasks, $REMAINING_TASKS remaining"
 echo ""
+
+# Check if already complete
+if [ "$REMAINING_TASKS" -eq 0 ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "✅ All tasks already complete! Nothing to do."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
+fi
 
 # Main loop
 while true; do
@@ -386,11 +422,39 @@ while true; do
     # Log metrics
     log_health_metrics "$ITERATION" "$ITERATION_DURATION" "$TASKS_AT_START" "$TASKS_AT_END"
 
-    # Check for completion signal
+    # Check for completion - verify BOTH signal AND actual task counts
+    INCOMPLETE_TASKS=$(count_incomplete_tasks)
+    COMPLETED_TASKS=$(count_completed_tasks)
+
     if grep -q "ALL_TASKS_COMPLETE" "$OUTPUT_LOG" 2>/dev/null; then
+        if [ "$INCOMPLETE_TASKS" -eq 0 ]; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "✅ Implementation complete!"
+            echo "   Completed: $COMPLETED_TASKS tasks"
+            echo "   Remaining: 0 tasks"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            break
+        else
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "⚠️  Premature completion signal detected!"
+            echo "   Claude said ALL_TASKS_COMPLETE but:"
+            echo "   - Completed: $COMPLETED_TASKS tasks"
+            echo "   - Remaining: $INCOMPLETE_TASKS tasks"
+            echo "   Continuing to next iteration..."
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            # Clear the log to avoid re-detecting the premature signal
+            > "$OUTPUT_LOG"
+        fi
+    fi
+
+    # Also check if all tasks are done even without signal
+    if all_tasks_complete; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "✅ Implementation complete!"
+        echo "✅ All tasks verified complete!"
+        echo "   Completed: $COMPLETED_TASKS tasks"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         break
     fi
