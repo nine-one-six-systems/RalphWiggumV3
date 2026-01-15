@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult } from '@/types';
+import type { ServerMessage, ClientCommand, LoopStatus, TasksState, GitStatus, LogEntry, ProjectConfig, PlanGeneratorStatus, PRDGeneratorStatus, ProjectScan, AgentInfo, CursorRuleInfo, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo } from '@/types';
 
 interface UseWebSocketReturn {
   connected: boolean;
@@ -65,6 +65,15 @@ interface UseWebSocketReturn {
   // Config file preview handlers
   readConfigFile: (filename: string) => void;
   closeConfigPreview: () => void;
+  // Repo agent installation state
+  repoAgents: RepoAgentInfo[];
+  repoAgentsLoading: boolean;
+  agentInstalling: string | null;
+  // Repo agent installation handlers
+  listRepoAgents: () => void;
+  installAgentGlobal: (agentId: string) => void;
+  installAgentProject: (agentId: string) => void;
+  installAllAgentsGlobal: () => void;
 }
 
 const DEFAULT_LOOP_STATUS: LoopStatus = {
@@ -145,6 +154,10 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
   // Config file preview state (for ExistingDocsViewer)
   const [configPreviewDoc, setConfigPreviewDoc] = useState<{ file: string; content: string } | null>(null);
   const [configPreviewLoading, setConfigPreviewLoading] = useState(false);
+  // Repo agent installation state
+  const [repoAgents, setRepoAgents] = useState<RepoAgentInfo[]>([]);
+  const [repoAgentsLoading, setRepoAgentsLoading] = useState(false);
+  const [agentInstalling, setAgentInstalling] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -336,6 +349,19 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
             });
             setConfigPreviewLoading(false);
             break;
+          // Repo agent messages
+          case 'agents:repo-result':
+            setRepoAgents(message.payload);
+            setRepoAgentsLoading(false);
+            break;
+          case 'agents:installed':
+            setAgentInstalling(null);
+            break;
+          case 'agents:error':
+            console.error('Agent error:', message.payload.error);
+            setAgentInstalling(null);
+            setRepoAgentsLoading(false);
+            break;
         }
       } catch {
         console.error('Failed to parse WebSocket message');
@@ -468,6 +494,35 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     setConfigPreviewLoading(false);
   }, []);
 
+  // Repo agent installation callbacks
+  const listRepoAgents = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setRepoAgentsLoading(true);
+      wsRef.current.send(JSON.stringify({ type: 'agents:list-repo' }));
+    }
+  }, []);
+
+  const installAgentGlobal = useCallback((agentId: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setAgentInstalling(agentId);
+      wsRef.current.send(JSON.stringify({ type: 'agents:install-global', payload: { agentId } }));
+    }
+  }, []);
+
+  const installAgentProject = useCallback((agentId: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setAgentInstalling(agentId);
+      wsRef.current.send(JSON.stringify({ type: 'agents:install-project', payload: { agentId } }));
+    }
+  }, []);
+
+  const installAllAgentsGlobal = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setAgentInstalling('all');
+      wsRef.current.send(JSON.stringify({ type: 'agents:install-all-global' }));
+    }
+  }, []);
+
   return {
     connected,
     loopStatus,
@@ -522,5 +577,13 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
     configPreviewLoading,
     readConfigFile,
     closeConfigPreview,
+    // Repo agent installation
+    repoAgents,
+    repoAgentsLoading,
+    agentInstalling,
+    listRepoAgents,
+    installAgentGlobal,
+    installAgentProject,
+    installAllAgentsGlobal,
   };
 }

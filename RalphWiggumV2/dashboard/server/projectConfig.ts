@@ -523,6 +523,115 @@ export class ProjectConfigManager {
     // Refresh config
     await this.refresh();
   }
+
+  // List agents from Ralph's .claude/agents/ directory (repo agents available for installation)
+  async listRepoAgents(): Promise<RepoAgentInfo[]> {
+    const agents: RepoAgentInfo[] = [];
+    const repoAgentsDir = path.join(this.ralphPath, '.claude', 'agents');
+
+    try {
+      const files = await fs.readdir(repoAgentsDir);
+
+      for (const file of files) {
+        if (!file.endsWith('.md')) continue;
+
+        const filePath = path.join(repoAgentsDir, file);
+        const agentId = file.replace('.md', '');
+
+        try {
+          const content = await fs.readFile(filePath, 'utf-8');
+
+          // Parse YAML frontmatter
+          const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+          let name = agentId;
+          let description = '';
+
+          if (frontmatterMatch) {
+            const frontmatter = frontmatterMatch[1];
+            const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
+            const descMatch = frontmatter.match(/^description:\s*(.+)$/m);
+
+            if (nameMatch) name = nameMatch[1].trim();
+            if (descMatch) description = descMatch[1].trim();
+          }
+
+          // Check if installed globally or in project
+          const globalPath = path.join(os.homedir(), '.claude', 'agents', file);
+          const projectAgentPath = path.join(this.projectPath, '.claude', 'agents', file);
+
+          let installedGlobal = false;
+          let installedProject = false;
+
+          try {
+            await fs.access(globalPath);
+            installedGlobal = true;
+          } catch { /* not installed globally */ }
+
+          try {
+            await fs.access(projectAgentPath);
+            installedProject = true;
+          } catch { /* not installed in project */ }
+
+          agents.push({
+            id: agentId,
+            name,
+            description,
+            filePath,
+            installedGlobal,
+            installedProject,
+          });
+        } catch {
+          // Skip files that can't be read
+        }
+      }
+    } catch {
+      // Repo agents directory doesn't exist
+    }
+
+    return agents;
+  }
+
+  // Install agent from Ralph repo to global ~/.claude/agents/
+  async installAgentGlobal(agentId: string): Promise<void> {
+    const sourcePath = path.join(this.ralphPath, '.claude', 'agents', `${agentId}.md`);
+    const globalDir = path.join(os.homedir(), '.claude', 'agents');
+    const destPath = path.join(globalDir, `${agentId}.md`);
+
+    // Read source file
+    const content = await fs.readFile(sourcePath, 'utf-8');
+
+    // Ensure directory exists
+    await fs.mkdir(globalDir, { recursive: true });
+
+    // Write to destination
+    await fs.writeFile(destPath, content, 'utf-8');
+  }
+
+  // Install agent from Ralph repo to project .claude/agents/
+  async installAgentProject(agentId: string): Promise<void> {
+    const sourcePath = path.join(this.ralphPath, '.claude', 'agents', `${agentId}.md`);
+    const projectAgentDir = path.join(this.projectPath, '.claude', 'agents');
+    const destPath = path.join(projectAgentDir, `${agentId}.md`);
+
+    // Read source file
+    const content = await fs.readFile(sourcePath, 'utf-8');
+
+    // Ensure directory exists
+    await fs.mkdir(projectAgentDir, { recursive: true });
+
+    // Write to destination
+    await fs.writeFile(destPath, content, 'utf-8');
+  }
+
+  // Install all repo agents to global location
+  async installAllAgentsGlobal(): Promise<void> {
+    const repoAgents = await this.listRepoAgents();
+    for (const agent of repoAgents) {
+      if (!agent.installedGlobal) {
+        await this.installAgentGlobal(agent.id);
+      }
+    }
+  }
 }
 
 // Type for CLAUDE.md file info
@@ -531,4 +640,14 @@ export interface ClaudeMdFile {
   location: string;
   exists: boolean;
   lineCount: number;
+}
+
+// Type for repo agent info (agents available in Ralph repo for installation)
+export interface RepoAgentInfo {
+  id: string;
+  name: string;
+  description: string;
+  filePath: string;
+  installedGlobal: boolean;
+  installedProject: boolean;
 }

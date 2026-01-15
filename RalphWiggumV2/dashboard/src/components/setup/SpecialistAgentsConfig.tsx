@@ -3,14 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Bot, Code, Eye, Sparkles, Globe, FolderCode, Server } from 'lucide-react';
-import type { AgentInfo } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Loader2, Bot, Code, Eye, Sparkles, Globe, FolderCode, Server, Download, CheckCircle } from 'lucide-react';
+import type { AgentInfo, RepoAgentInfo } from '@/types';
 
 interface SpecialistAgentsConfigProps {
   availableAgents: AgentInfo[];
   agentsLoading: boolean;
   onListAgents: () => void;
   onToggleAgent: (agentId: string, enabled: boolean) => void;
+  // Repo agent installation props
+  repoAgents: RepoAgentInfo[];
+  repoAgentsLoading: boolean;
+  agentInstalling: string | null;
+  onListRepoAgents: () => void;
+  onInstallAgentGlobal: (agentId: string) => void;
+  onInstallAgentProject: (agentId: string) => void;
+  onInstallAllAgentsGlobal: () => void;
 }
 
 const agentIcons: Record<string, typeof Bot> = {
@@ -25,15 +34,27 @@ export function SpecialistAgentsConfig({
   agentsLoading,
   onListAgents,
   onToggleAgent,
+  repoAgents,
+  repoAgentsLoading,
+  agentInstalling,
+  onListRepoAgents,
+  onInstallAgentGlobal,
+  onInstallAgentProject,
+  onInstallAllAgentsGlobal,
 }: SpecialistAgentsConfigProps) {
   // Fetch agents on mount
   useEffect(() => {
     onListAgents();
-  }, [onListAgents]);
+    onListRepoAgents();
+  }, [onListAgents, onListRepoAgents]);
 
   // Group agents by source
   const globalAgents = availableAgents.filter((a) => a.source === 'global');
   const projectAgents = availableAgents.filter((a) => a.source === 'project');
+
+  // Check if any repo agents are not yet installed
+  const uninstalledRepoAgents = repoAgents.filter((a) => !a.installedGlobal);
+  const hasUninstalledAgents = uninstalledRepoAgents.length > 0;
 
   const renderAgent = (agent: AgentInfo) => {
     const Icon = agentIcons[agent.id] || Bot;
@@ -72,6 +93,73 @@ export function SpecialistAgentsConfig({
     );
   };
 
+  const renderRepoAgent = (agent: RepoAgentInfo) => {
+    const Icon = agentIcons[agent.id] || Bot;
+    const isInstalling = agentInstalling === agent.id || agentInstalling === 'all';
+
+    return (
+      <div
+        key={agent.id}
+        className="flex items-start gap-4 rounded-lg border p-4"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            <Label className="font-semibold">{agent.name}</Label>
+            {agent.installedGlobal && (
+              <Badge variant="outline" className="text-xs gap-1">
+                <CheckCircle className="h-3 w-3" /> Global
+              </Badge>
+            )}
+            {agent.installedProject && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <CheckCircle className="h-3 w-3" /> Project
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">{agent.description}</p>
+        </div>
+        <div className="flex gap-2">
+          {!agent.installedGlobal && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onInstallAgentGlobal(agent.id)}
+              disabled={isInstalling}
+            >
+              {isInstalling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <><Download className="h-4 w-4 mr-1" /> Global</>
+              )}
+            </Button>
+          )}
+          {!agent.installedProject && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onInstallAgentProject(agent.id)}
+              disabled={isInstalling}
+            >
+              {isInstalling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <><Download className="h-4 w-4 mr-1" /> Project</>
+              )}
+            </Button>
+          )}
+          {agent.installedGlobal && agent.installedProject && (
+            <Badge variant="success" className="text-xs">
+              <CheckCircle className="h-3 w-3 mr-1" /> Installed
+            </Badge>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -86,18 +174,53 @@ export function SpecialistAgentsConfig({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Repo Agents Available for Installation */}
+        {repoAgentsLoading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading available agents...</span>
+          </div>
+        ) : repoAgents.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Download className="h-4 w-4" />
+                Available Agents from Ralph
+              </h3>
+              {hasUninstalledAgents && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onInstallAllAgentsGlobal}
+                  disabled={agentInstalling !== null}
+                >
+                  {agentInstalling === 'all' ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-1" />
+                  )}
+                  Install All Globally
+                </Button>
+              )}
+            </div>
+            <div className="space-y-3">
+              {repoAgents.map(renderRepoAgent)}
+            </div>
+          </div>
+        )}
+
         {agentsLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Loading agents...</span>
+            <span className="ml-2 text-muted-foreground">Loading installed agents...</span>
           </div>
         ) : availableAgents.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center">
             <Bot className="mx-auto h-8 w-8 text-muted-foreground" />
-            <h3 className="mt-4 font-semibold">No Agents Found</h3>
+            <h3 className="mt-4 font-semibold">No Installed Agents</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               No agent files found in ~/.claude/agents/ or .claude/agents/.
-              Create agent files with YAML frontmatter to add specialists.
+              {repoAgents.length > 0 && " Install agents from the list above to get started."}
             </p>
           </div>
         ) : (
@@ -107,7 +230,7 @@ export function SpecialistAgentsConfig({
               <div className="space-y-3">
                 <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <Globe className="h-4 w-4" />
-                  Global Agents
+                  Installed Global Agents
                   <span className="text-xs">~/.claude/agents/</span>
                 </h3>
                 <div className="space-y-3">
@@ -121,7 +244,7 @@ export function SpecialistAgentsConfig({
               <div className="space-y-3">
                 <h3 className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                   <FolderCode className="h-4 w-4" />
-                  Project Agents
+                  Installed Project Agents
                   <span className="text-xs">.claude/agents/</span>
                 </h3>
                 <div className="space-y-3">
@@ -138,7 +261,7 @@ export function SpecialistAgentsConfig({
                   Project Agents
                 </h3>
                 <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                  No project-specific agents. Copy agents from global to .claude/agents/ to override.
+                  No project-specific agents installed. Install agents to project scope to override global settings.
                 </div>
               </div>
             )}
@@ -162,6 +285,7 @@ export function SpecialistAgentsConfig({
             </ul>
             <p className="mt-3">
               Toggle agents on/off to control which specialists Claude can delegate to.
+              Install new agents from Ralph to expand capabilities.
             </p>
           </div>
         </div>

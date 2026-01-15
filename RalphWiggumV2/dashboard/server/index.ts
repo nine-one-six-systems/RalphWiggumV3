@@ -228,6 +228,47 @@ ${audienceContent}
               ws.send(JSON.stringify({ type: 'dependencies:error', payload: { error: 'Failed to check dependencies' } }));
             }
             break;
+          case 'agents:list-repo':
+            try {
+              const repoAgents = await projectConfig.listRepoAgents();
+              ws.send(JSON.stringify({ type: 'agents:repo-result', payload: repoAgents }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'agents:error', payload: { error: 'Failed to list repo agents' } }));
+            }
+            break;
+          case 'agents:install-global':
+            try {
+              await projectConfig.installAgentGlobal(message.payload.agentId);
+              ws.send(JSON.stringify({ type: 'agents:installed', payload: { agentId: message.payload.agentId, scope: 'global' } }));
+              // Send updated repo agents list
+              const updatedRepoAgents = await projectConfig.listRepoAgents();
+              ws.send(JSON.stringify({ type: 'agents:repo-result', payload: updatedRepoAgents }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'agents:error', payload: { error: `Failed to install agent globally: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+          case 'agents:install-project':
+            try {
+              await projectConfig.installAgentProject(message.payload.agentId);
+              ws.send(JSON.stringify({ type: 'agents:installed', payload: { agentId: message.payload.agentId, scope: 'project' } }));
+              // Send updated repo agents list
+              const updatedRepoAgentsAfterProject = await projectConfig.listRepoAgents();
+              ws.send(JSON.stringify({ type: 'agents:repo-result', payload: updatedRepoAgentsAfterProject }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'agents:error', payload: { error: `Failed to install agent to project: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+          case 'agents:install-all-global':
+            try {
+              await projectConfig.installAllAgentsGlobal();
+              ws.send(JSON.stringify({ type: 'agents:installed', payload: { agentId: 'all', scope: 'global' } }));
+              // Send updated repo agents list
+              const updatedRepoAgentsAll = await projectConfig.listRepoAgents();
+              ws.send(JSON.stringify({ type: 'agents:repo-result', payload: updatedRepoAgentsAll }));
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'agents:error', payload: { error: `Failed to install all agents: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
         }
       } catch (err) {
         console.error('Error handling message:', err);

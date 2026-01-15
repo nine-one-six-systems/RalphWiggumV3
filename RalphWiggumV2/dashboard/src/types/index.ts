@@ -254,7 +254,10 @@ export type ServerMessage =
   | ClaudeMdAppliedMessage
   | ClaudeMdErrorMessage
   | DependenciesResultMessage
-  | DependenciesErrorMessage;
+  | DependenciesErrorMessage
+  | RepoAgentsResultMessage
+  | AgentInstalledMessage
+  | AgentErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -525,6 +528,60 @@ export interface DependenciesErrorMessage extends WSMessage {
   };
 }
 
+// Repo agent info (agents available in Ralph repo for installation)
+export interface RepoAgentInfo {
+  id: string;
+  name: string;
+  description: string;
+  filePath: string;
+  installedGlobal: boolean;
+  installedProject: boolean;
+}
+
+// Agent installation commands
+export interface ListRepoAgentsCommand {
+  type: 'agents:list-repo';
+}
+
+export interface InstallAgentGlobalCommand {
+  type: 'agents:install-global';
+  payload: {
+    agentId: string;
+  };
+}
+
+export interface InstallAgentProjectCommand {
+  type: 'agents:install-project';
+  payload: {
+    agentId: string;
+  };
+}
+
+export interface InstallAllAgentsGlobalCommand {
+  type: 'agents:install-all-global';
+}
+
+// Agent installation messages
+export interface RepoAgentsResultMessage extends WSMessage {
+  type: 'agents:repo-result';
+  payload: RepoAgentInfo[];
+}
+
+export interface AgentInstalledMessage extends WSMessage {
+  type: 'agents:installed';
+  payload: {
+    agentId: string;
+    scope: 'global' | 'project';
+  };
+}
+
+export interface AgentErrorMessage extends WSMessage {
+  type: 'agents:error';
+  payload: {
+    error: string;
+  };
+}
+
 export type ClientCommand =
   | StartLoopCommand
   | StopLoopCommand
@@ -544,4 +601,8 @@ export type ClientCommand =
   | ListClaudeMdCommand
   | ReadClaudeMdCommand
   | ApplyClaudeMdCommand
-  | CheckDependenciesCommand;
+  | CheckDependenciesCommand
+  | ListRepoAgentsCommand
+  | InstallAgentGlobalCommand
+  | InstallAgentProjectCommand
+  | InstallAllAgentsGlobalCommand;

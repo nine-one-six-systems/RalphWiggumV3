@@ -77,6 +77,13 @@ export function Dashboard() {
     configPreviewLoading,
     readConfigFile,
     closeConfigPreview,
+    repoAgents,
+    repoAgentsLoading,
+    agentInstalling,
+    listRepoAgents,
+    installAgentGlobal,
+    installAgentProject,
+    installAllAgentsGlobal,
   } = useWebSocket();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -353,6 +360,13 @@ export function Dashboard() {
               dependencyStatus={dependencyStatus}
               dependencyLoading={dependencyLoading}
               onCheckDependencies={checkDependencies}
+              repoAgents={repoAgents}
+              repoAgentsLoading={repoAgentsLoading}
+              agentInstalling={agentInstalling}
+              onListRepoAgents={listRepoAgents}
+              onInstallAgentGlobal={installAgentGlobal}
+              onInstallAgentProject={installAgentProject}
+              onInstallAllAgentsGlobal={installAllAgentsGlobal}
             />
           </TabsContent>
         </Tabs>

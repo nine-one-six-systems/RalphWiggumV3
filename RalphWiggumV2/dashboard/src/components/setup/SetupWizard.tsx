@@ -9,7 +9,7 @@ import { CursorRulesConfig } from './CursorRulesConfig';
 import { PromptsConfig } from './PromptsConfig';
 import { ClaudeMdConfig } from './ClaudeMdConfig';
 import { DependencyChecker } from './DependencyChecker';
-import type { ProjectConfig, AgentInfo, CursorRuleInfo, GitStatus, ProjectInfo, ClaudeMdFile, DependencyCheckResult } from '@/types';
+import type { ProjectConfig, AgentInfo, CursorRuleInfo, GitStatus, ProjectInfo, ClaudeMdFile, DependencyCheckResult, RepoAgentInfo } from '@/types';
 import {
   Settings,
   FileCode,
@@ -50,6 +50,14 @@ interface SetupWizardProps {
   dependencyStatus?: DependencyCheckResult[];
   dependencyLoading?: boolean;
   onCheckDependencies?: () => void;
+  // Repo agent installation props
+  repoAgents?: RepoAgentInfo[];
+  repoAgentsLoading?: boolean;
+  agentInstalling?: string | null;
+  onListRepoAgents?: () => void;
+  onInstallAgentGlobal?: (agentId: string) => void;
+  onInstallAgentProject?: (agentId: string) => void;
+  onInstallAllAgentsGlobal?: () => void;
 }
 
 export function SetupWizard({
@@ -79,6 +87,14 @@ export function SetupWizard({
   dependencyStatus = [],
   dependencyLoading = false,
   onCheckDependencies,
+  // Repo agent installation props
+  repoAgents = [],
+  repoAgentsLoading = false,
+  agentInstalling = null,
+  onListRepoAgents,
+  onInstallAgentGlobal,
+  onInstallAgentProject,
+  onInstallAllAgentsGlobal,
 }: SetupWizardProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -312,6 +328,13 @@ export function SetupWizard({
             agentsLoading={agentsLoading}
             onListAgents={onListAgents}
             onToggleAgent={onToggleAgent}
+            repoAgents={repoAgents}
+            repoAgentsLoading={repoAgentsLoading}
+            agentInstalling={agentInstalling}
+            onListRepoAgents={onListRepoAgents ?? (() => {})}
+            onInstallAgentGlobal={onInstallAgentGlobal ?? (() => {})}
+            onInstallAgentProject={onInstallAgentProject ?? (() => {})}
+            onInstallAllAgentsGlobal={onInstallAllAgentsGlobal ?? (() => {})}
           />
         </TabsContent>
 
