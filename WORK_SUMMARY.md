@@ -111,9 +111,18 @@ Session 2 (2026-01-15) verified and finalized:
    - `?mode=launcher` shows LauncherHome
    - Default shows Dashboard
 
+## Release 5: Loop Health Monitoring (Feature Set 10, Tasks 74-78) ✅ COMPLETE
+
+### Bash Script Functions (loop.sh)
+1. **check_agents_config()** - Validates AGENTS.md has real commands
+2. **check_iteration_health()** - Parses logs for error patterns
+3. **detect_stuck_loop()** - Tracks consecutive failures
+4. **log_health_metrics()** - Records iteration stats to ralph-health.log
+5. **Integrated health functions** - Graceful warnings in main loop
+
 ## Remaining Work
-- None - All 53/53 tasks complete
-- All 9 Feature Sets implemented
+- None - All 63/63 tasks complete
+- All 10 Feature Sets implemented (Releases 1-5)
 
 ## Learnings
 - The codebase follows a consistent pattern: Type -> Server Handler -> WebSocket State -> UI
@@ -125,6 +134,8 @@ Session 2 (2026-01-15) verified and finalized:
 - v0.0.1: Initial release (Releases 1-3)
 - v0.0.2: Feature Set 5 (Agent Installation)
 - v0.0.3: Feature Set 9 (Project Launcher) - All 53 tasks complete
+- v0.0.4: TypeScript fixes and Feature Set 10 (Loop Health Monitoring)
+- v0.0.5: tasks.json sync and documentation updates - All 63 tasks complete
 
 ## Usage
 Access the launcher at: `http://localhost:5173?mode=launcher`

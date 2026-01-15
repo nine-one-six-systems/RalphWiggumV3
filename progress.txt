@@ -20,3 +20,12 @@ Entries are append-only - never delete, only add.
 - Tip: No git remote configured - push will need `git remote add origin <url>` first
 ---
 
+---
+[2026-01-15] Documentation Sync Complete
+- Pattern: Keep tasks.json in sync with IMPLEMENTATION_PLAN.md when tasks are completed
+- Pattern: Include all 5 releases (10 Feature Sets) in documentation for completeness
+- Gotcha: tasks.json was outdated (showing 31 pending tasks) while IMPLEMENTATION_PLAN.md showed 63 complete
+- Tip: Always verify both tracking files match before signaling ALL_TASKS_COMPLETE
+- Tip: Git tags should reflect major milestones (v0.0.4 for Feature Set 10, v0.0.5 for doc sync)
+---
+
