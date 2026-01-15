@@ -4,7 +4,7 @@
 
 Enhance RalphWiggumV2 dashboard with 8 feature sets covering PRD→Plan integration, task parsing, cross-platform support, agent management, and more.
 
-**Status**: 67/85 tasks complete (79%) - Feature Set 11 complete, Feature Sets 12-13 pending
+**Status**: 74/85 tasks complete (87%) - Feature Sets 1-12 complete, Feature Set 13 pending
 
 ---
 
@@ -163,17 +163,17 @@ The launcher crashes when starting instances because `instanceSpawner.ts` tries 
 - [x] Task 81: Test launcher instance spawning on Windows
 - [x] Task 82: Add instance health check before marking as started
 
-### Feature Set 12: File Browser for Project Selection
+### Feature Set 12: File Browser for Project Selection ✅
 
 Add file browser to launcher for easier project path selection.
 
-- [ ] Task 83: Create server endpoint `launcher:browse` to list directories
-- [ ] Task 84: Create FileBrowser.tsx component with folder navigation
-- [ ] Task 85: Add FileBrowser to AddProjectDialog.tsx
-- [ ] Task 86: Handle Windows drive letters (C:, D:, etc.) in file browser
-- [ ] Task 87: Add breadcrumb navigation in file browser
-- [ ] Task 88: Filter to show only directories (not files)
-- [ ] Task 89: Highlight directories that are git repos or Ralph-ready
+- [x] Task 83: Create server endpoint `launcher:browse` to list directories
+- [x] Task 84: Create FileBrowser.tsx component with folder navigation
+- [x] Task 85: Add FileBrowser to AddProjectDialog.tsx
+- [x] Task 86: Handle Windows drive letters (C:, D:, etc.) in file browser
+- [x] Task 87: Add breadcrumb navigation in file browser
+- [x] Task 88: Filter to show only directories (not files)
+- [x] Task 89: Highlight directories that are git repos or Ralph-ready
 
 ### Feature Set 13: LLM-as-Judge Review System
 

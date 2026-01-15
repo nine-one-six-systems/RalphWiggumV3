@@ -283,7 +283,8 @@ export type ServerMessage =
   | LauncherInstanceStoppedMessage
   | LauncherInstanceCrashedMessage
   | LauncherDiscoverResultMessage
-  | LauncherErrorMessage;
+  | LauncherErrorMessage
+  | LauncherBrowseResultMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -643,7 +644,8 @@ export type ClientCommand =
   | LauncherSpawnInstanceCommand
   | LauncherStopInstanceCommand
   | LauncherListInstancesCommand
-  | LauncherDiscoverCommand;
+  | LauncherDiscoverCommand
+  | LauncherBrowseCommand;
 
 // ============================================================================
 // Project Launcher Types (Feature Set 9)
@@ -776,4 +778,39 @@ export interface LauncherErrorMessage extends WSMessage {
   payload: {
     error: string;
   };
+}
+
+// ============================================================================
+// File Browser Types (Feature Set 12)
+// ============================================================================
+
+// Directory entry in file browser
+export interface BrowseEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  isGitRepo: boolean;
+  isRalphReady: boolean;
+}
+
+// Result of browsing a directory
+export interface BrowseResult {
+  currentPath: string;
+  parentPath: string | null;
+  entries: BrowseEntry[];
+  drives?: string[];  // Windows drive letters (C:, D:, etc.)
+}
+
+// File browser WebSocket command
+export interface LauncherBrowseCommand {
+  type: 'launcher:browse';
+  payload: {
+    path: string;  // Empty string or "/" for root/drives on Windows
+  };
+}
+
+// File browser WebSocket message
+export interface LauncherBrowseResultMessage extends WSMessage {
+  type: 'launcher:browse:result';
+  payload: BrowseResult;
 }

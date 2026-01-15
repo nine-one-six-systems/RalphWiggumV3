@@ -23,6 +23,75 @@ const __dirname = path.dirname(__filename);
 // Detect project root (async initialization)
 const RALPH_DEFAULT_PATH = path.resolve(__dirname, '../..');
 
+// Browse directory helper - returns directory entries with metadata
+interface BrowseEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  isGitRepo: boolean;
+  isRalphReady: boolean;
+}
+
+async function browseDirectory(dirPath: string): Promise<BrowseEntry[]> {
+  const entries: BrowseEntry[] = [];
+
+  try {
+    const items = await fs.readdir(dirPath, { withFileTypes: true });
+
+    for (const item of items) {
+      // Skip hidden files/folders (starting with .)
+      if (item.name.startsWith('.')) continue;
+
+      // Only include directories (Task 88: Filter to show only directories)
+      if (!item.isDirectory()) continue;
+
+      const fullPath = path.join(dirPath, item.name);
+
+      // Check if it's a git repo
+      let isGitRepo = false;
+      try {
+        await fs.access(path.join(fullPath, '.git'));
+        isGitRepo = true;
+      } catch {
+        // Not a git repo
+      }
+
+      // Check if it's Ralph-ready (has AGENTS.md and/or CLAUDE.md)
+      let isRalphReady = false;
+      try {
+        const [hasAgents, hasClaude] = await Promise.all([
+          fs.access(path.join(fullPath, 'AGENTS.md')).then(() => true).catch(() => false),
+          fs.access(path.join(fullPath, 'CLAUDE.md')).then(() => true).catch(() => false),
+        ]);
+        isRalphReady = hasAgents || hasClaude;
+      } catch {
+        // Error checking, not Ralph-ready
+      }
+
+      entries.push({
+        name: item.name,
+        path: fullPath,
+        isDirectory: true,
+        isGitRepo,
+        isRalphReady,
+      });
+    }
+
+    // Sort: Ralph-ready first, then git repos, then alphabetically
+    entries.sort((a, b) => {
+      if (a.isRalphReady !== b.isRalphReady) return a.isRalphReady ? -1 : 1;
+      if (a.isGitRepo !== b.isGitRepo) return a.isGitRepo ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+  } catch (err) {
+    console.error(`Error reading directory ${dirPath}:`, err);
+    throw err;
+  }
+
+  return entries;
+}
+
 // Initialize project detection and return paths
 async function initializeProjectPaths(): Promise<ProjectRootResult> {
   // Allow explicit override via environment
@@ -365,6 +434,81 @@ ${audienceContent}
               ws.send(JSON.stringify({ type: 'launcher:discover:result', payload: discoveredProjects }));
             } catch (err) {
               ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to discover projects: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
+            }
+            break;
+
+          case 'launcher:browse':
+            try {
+              const requestedPath = message.payload?.path || '';
+              const isWindows = process.platform === 'win32';
+
+              // Handle root/drives listing for Windows
+              if (requestedPath === '' || requestedPath === '/' || requestedPath === '\\') {
+                if (isWindows) {
+                  // On Windows, list available drives
+                  const drives: string[] = [];
+                  // Check common drive letters
+                  for (const letter of 'CDEFGHIJKLMNOPQRSTUVWXYZ') {
+                    const drivePath = `${letter}:\\`;
+                    try {
+                      await fs.access(drivePath);
+                      drives.push(drivePath);
+                    } catch {
+                      // Drive not available
+                    }
+                  }
+                  ws.send(JSON.stringify({
+                    type: 'launcher:browse:result',
+                    payload: {
+                      currentPath: '',
+                      parentPath: null,
+                      entries: [],
+                      drives,
+                    }
+                  }));
+                } else {
+                  // On Unix, browse root
+                  const entries = await browseDirectory('/');
+                  ws.send(JSON.stringify({
+                    type: 'launcher:browse:result',
+                    payload: {
+                      currentPath: '/',
+                      parentPath: null,
+                      entries,
+                    }
+                  }));
+                }
+              } else {
+                // Browse the specified directory
+                const normalizedPath = path.normalize(requestedPath);
+                const entries = await browseDirectory(normalizedPath);
+
+                // Calculate parent path
+                let parentPath: string | null = path.dirname(normalizedPath);
+                if (isWindows) {
+                  // On Windows, check if we're at drive root (e.g., C:\)
+                  if (normalizedPath.match(/^[A-Z]:\\$/i)) {
+                    parentPath = '';  // Go back to drives list
+                  } else if (parentPath === normalizedPath) {
+                    parentPath = null;
+                  }
+                } else {
+                  if (parentPath === normalizedPath || normalizedPath === '/') {
+                    parentPath = null;
+                  }
+                }
+
+                ws.send(JSON.stringify({
+                  type: 'launcher:browse:result',
+                  payload: {
+                    currentPath: normalizedPath,
+                    parentPath,
+                    entries,
+                  }
+                }));
+              }
+            } catch (err) {
+              ws.send(JSON.stringify({ type: 'launcher:error', payload: { error: `Failed to browse directory: ${err instanceof Error ? err.message : 'Unknown error'}` } }));
             }
             break;
         }

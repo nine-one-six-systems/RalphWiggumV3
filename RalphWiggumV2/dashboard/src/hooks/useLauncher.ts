@@ -8,6 +8,7 @@ import type {
   LauncherProject,
   LauncherInstance,
   DiscoveredProject,
+  BrowseResult,
 } from '@/types';
 
 interface UseLauncherReturn {
@@ -21,6 +22,9 @@ interface UseLauncherReturn {
   // Discovery state
   discoveredProjects: DiscoveredProject[];
   discovering: boolean;
+  // Browse state
+  browseResult: BrowseResult | null;
+  browsing: boolean;
   // Error state
   error: string | null;
   // Project operations
@@ -33,6 +37,8 @@ interface UseLauncherReturn {
   stopInstance: (projectId: string) => void;
   // Discovery operations
   discoverProjects: () => void;
+  // Browse operations
+  browseDirectory: (path: string) => void;
   // Error handling
   clearError: () => void;
   // Utility functions
@@ -57,6 +63,10 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
   // Discovery state
   const [discoveredProjects, setDiscoveredProjects] = useState<DiscoveredProject[]>([]);
   const [discovering, setDiscovering] = useState(false);
+
+  // Browse state
+  const [browseResult, setBrowseResult] = useState<BrowseResult | null>(null);
+  const [browsing, setBrowsing] = useState(false);
 
   // Error state
   const [error, setError] = useState<string | null>(null);
@@ -161,11 +171,17 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
             setDiscovering(false);
             break;
 
+          case 'launcher:browse:result':
+            setBrowseResult(message.payload);
+            setBrowsing(false);
+            break;
+
           case 'launcher:error':
             setError(message.payload.error);
             setProjectsLoading(false);
             setInstancesLoading(false);
             setDiscovering(false);
+            setBrowsing(false);
             break;
         }
       } catch {
@@ -264,6 +280,18 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
     }
   }, []);
 
+  // Browse operations
+  const browseDirectory = useCallback((path: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      setBrowsing(true);
+      setError(null);
+      wsRef.current.send(JSON.stringify({
+        type: 'launcher:browse',
+        payload: { path }
+      }));
+    }
+  }, []);
+
   // Error handling
   const clearError = useCallback(() => {
     setError(null);
@@ -286,6 +314,8 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
     instancesLoading,
     discoveredProjects,
     discovering,
+    browseResult,
+    browsing,
     error,
     listProjects,
     addProject,
@@ -294,6 +324,7 @@ export function useLauncher(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws`
     spawnInstance,
     stopInstance,
     discoverProjects,
+    browseDirectory,
     clearError,
     getInstanceForProject,
     isInstanceRunning,

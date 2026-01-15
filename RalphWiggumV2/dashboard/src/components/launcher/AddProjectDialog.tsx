@@ -1,15 +1,16 @@
 /**
  * AddProjectDialog - Dialog for adding a new project to the launcher
- * Allows users to enter a project path manually or use discovered projects
+ * Allows users to enter a project path manually, browse directories, or use discovered projects
  */
 
 import { useState } from 'react';
-import type { DiscoveredProject } from '@/types';
+import type { DiscoveredProject, BrowseResult } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { FileBrowser } from './FileBrowser';
 import {
   X,
   FolderPlus,
@@ -18,6 +19,7 @@ import {
   AlertTriangle,
   Loader2,
   FolderOpen,
+  FolderSearch,
 } from 'lucide-react';
 
 interface AddProjectDialogProps {
@@ -27,6 +29,9 @@ interface AddProjectDialogProps {
   discoveredProjects: DiscoveredProject[];
   isDiscovering: boolean;
   onDiscover: () => void;
+  browseResult: BrowseResult | null;
+  isBrowsing: boolean;
+  onBrowse: (path: string) => void;
 }
 
 export function AddProjectDialog({
@@ -36,8 +41,12 @@ export function AddProjectDialog({
   discoveredProjects,
   isDiscovering,
   onDiscover,
+  browseResult,
+  isBrowsing,
+  onBrowse,
 }: AddProjectDialogProps) {
   const [manualPath, setManualPath] = useState('');
+  const [activeTab, setActiveTab] = useState<'manual' | 'browse' | 'discover'>('browse');
 
   if (!isOpen) return null;
 
@@ -51,6 +60,11 @@ export function AddProjectDialog({
 
   const handleAddDiscoveredProject = (path: string) => {
     onAddProject(path);
+  };
+
+  const handleBrowseSelect = (path: string) => {
+    setManualPath(path);
+    setActiveTab('manual');
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -80,126 +94,172 @@ export function AddProjectDialog({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden p-4 space-y-6">
-          {/* Manual Path Input */}
-          <div className="space-y-2">
-            <Label htmlFor="projectPath">Project Path</Label>
-            <div className="flex gap-2">
-              <Input
-                id="projectPath"
-                placeholder="Enter full path to project directory..."
-                value={manualPath}
-                onChange={(e) => setManualPath(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddManualPath()}
-              />
-              <Button onClick={handleAddManualPath} disabled={!manualPath.trim()}>
-                Add
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Enter the full path to a project directory (e.g., C:\Projects\MyApp)
-            </p>
+        <div className="flex-1 overflow-hidden p-4 space-y-4">
+          {/* Tab Navigation */}
+          <div className="flex gap-1 border-b">
+            <button
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'browse'
+                  ? 'text-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => setActiveTab('browse')}
+            >
+              <FolderSearch className="h-4 w-4 inline mr-2" />
+              Browse
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'manual'
+                  ? 'text-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => setActiveTab('manual')}
+            >
+              <FolderOpen className="h-4 w-4 inline mr-2" />
+              Manual
+            </button>
+            <button
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'discover'
+                  ? 'text-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+              onClick={() => setActiveTab('discover')}
+            >
+              <Search className="h-4 w-4 inline mr-2" />
+              Discover
+            </button>
           </div>
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or discover projects
-              </span>
-            </div>
-          </div>
-
-          {/* Project Discovery */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Discovered Projects</Label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onDiscover}
-                disabled={isDiscovering}
-              >
-                {isDiscovering ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Scan for Projects
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {discoveredProjects.length > 0 ? (
-              <ScrollArea className="h-[250px] rounded-md border p-2">
-                <div className="space-y-2">
-                  {discoveredProjects.map((project) => (
-                    <div
-                      key={project.path}
-                      className={`flex items-center justify-between p-3 rounded-md border ${
-                        project.alreadyRegistered ? 'bg-muted opacity-50' : 'hover:bg-muted/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">{project.name}</span>
-                            {project.isRalphReady ? (
-                              <Badge variant="success" className="shrink-0">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Ralph Ready
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="shrink-0">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                Needs Setup
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate" title={project.path}>
-                            {project.path}
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleAddDiscoveredProject(project.path)}
-                        disabled={project.alreadyRegistered}
-                        className="shrink-0 ml-2"
-                      >
-                        {project.alreadyRegistered ? 'Added' : 'Add'}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="h-[250px] rounded-md border flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Click "Scan for Projects" to discover projects</p>
-                  <p className="text-xs mt-1">
-                    Searches common directories like ~/Projects, ~/Code, etc.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {availableProjects.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Found {availableProjects.length} new project{availableProjects.length !== 1 ? 's' : ''} to add
+          {/* Tab Content */}
+          {activeTab === 'browse' && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Navigate to your project folder and select it.
               </p>
-            )}
-          </div>
+              <FileBrowser
+                browseResult={browseResult}
+                browsing={isBrowsing}
+                onBrowse={onBrowse}
+                onSelect={handleBrowseSelect}
+              />
+            </div>
+          )}
+
+          {activeTab === 'manual' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="projectPath">Project Path</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="projectPath"
+                    placeholder="Enter full path to project directory..."
+                    value={manualPath}
+                    onChange={(e) => setManualPath(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddManualPath()}
+                  />
+                  <Button onClick={handleAddManualPath} disabled={!manualPath.trim()}>
+                    Add
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter the full path to a project directory (e.g., C:\Projects\MyApp)
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'discover' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Scan common directories for projects.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onDiscover}
+                  disabled={isDiscovering}
+                >
+                  {isDiscovering ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Scanning...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Scan for Projects
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {discoveredProjects.length > 0 ? (
+                <ScrollArea className="h-[250px] rounded-md border p-2">
+                  <div className="space-y-2">
+                    {discoveredProjects.map((project) => (
+                      <div
+                        key={project.path}
+                        className={`flex items-center justify-between p-3 rounded-md border ${
+                          project.alreadyRegistered ? 'bg-muted opacity-50' : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">{project.name}</span>
+                              {project.isRalphReady ? (
+                                <Badge variant="success" className="shrink-0">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Ralph Ready
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="shrink-0">
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  Needs Setup
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate" title={project.path}>
+                              {project.path}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddDiscoveredProject(project.path)}
+                          disabled={project.alreadyRegistered}
+                          className="shrink-0 ml-2"
+                        >
+                          {project.alreadyRegistered ? 'Added' : 'Add'}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              ) : (
+                <div className="h-[250px] rounded-md border flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Click "Scan for Projects" to discover projects</p>
+                    <p className="text-xs mt-1">
+                      Searches common directories like ~/Projects, ~/Code, etc.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {availableProjects.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Found {availableProjects.length} new project{availableProjects.length !== 1 ? 's' : ''} to add
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

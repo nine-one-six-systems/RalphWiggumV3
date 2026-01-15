@@ -29,6 +29,8 @@ export function LauncherHome() {
     instancesLoading,
     discoveredProjects,
     discovering,
+    browseResult,
+    browsing,
     error,
     listProjects,
     addProject,
@@ -36,6 +38,7 @@ export function LauncherHome() {
     spawnInstance,
     stopInstance,
     discoverProjects,
+    browseDirectory,
     clearError,
     getInstanceForProject,
   } = useLauncher();
@@ -194,6 +197,9 @@ export function LauncherHome() {
         discoveredProjects={discoveredProjects}
         isDiscovering={discovering}
         onDiscover={discoverProjects}
+        browseResult={browseResult}
+        isBrowsing={browsing}
+        onBrowse={browseDirectory}
       />
     </div>
   );
