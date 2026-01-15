@@ -120,3 +120,11 @@ Session 2 (2026-01-15) verified and finalized:
 - YAML frontmatter in .md files enables metadata extraction
 - No test framework is set up in the dashboard package
 - No git remote configured for push
+
+## Git Tags
+- v0.0.1: Initial release (Releases 1-3)
+- v0.0.2: Feature Set 5 (Agent Installation)
+- v0.0.3: Feature Set 9 (Project Launcher) - All 53 tasks complete
+
+## Usage
+Access the launcher at: `http://localhost:5173?mode=launcher`
