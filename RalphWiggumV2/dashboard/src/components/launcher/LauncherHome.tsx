@@ -3,7 +3,7 @@
  * Displays project cards and provides actions for managing projects/instances
  */
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useLauncher } from '@/hooks/useLauncher';
 import { ProjectCard } from './ProjectCard';
 import { AddProjectDialog } from './AddProjectDialog';
@@ -42,29 +42,62 @@ export function LauncherHome() {
     browseDirectory,
     clearError,
     getInstanceForProject,
+    isInstanceRunning,
   } = useLauncher();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [spawningProjectId, setSpawningProjectId] = useState<string | null>(null);
+  // Track spawning state per project to prevent double-spawns
+  const spawningRef = useRef<Set<string>>(new Set());
 
   const handleOpenDashboard = async (projectId: string) => {
+    // Prevent double-spawns
+    if (spawningRef.current.has(projectId) || isInstanceRunning(projectId)) {
+      return;
+    }
+
+    spawningRef.current.add(projectId);
     setSpawningProjectId(projectId);
-    spawnInstance(projectId);
-    // The instance spawner will open the browser tab when ready
-    // We wait a bit and then clear the spawning state
-    setTimeout(() => {
+    
+    try {
+      spawnInstance(projectId);
+      // The instance spawner will open the browser tab when ready
+      // We wait a bit and then clear the spawning state
+      setTimeout(() => {
+        setSpawningProjectId(null);
+        spawningRef.current.delete(projectId);
+        const instance = getInstanceForProject(projectId);
+        if (instance) {
+          window.open(`http://localhost:${instance.backendPort}`, '_blank');
+        }
+      }, 3000);
+    } catch (err) {
+      spawningRef.current.delete(projectId);
       setSpawningProjectId(null);
-      const instance = getInstanceForProject(projectId);
-      if (instance) {
-        window.open(`http://localhost:${instance.backendPort}`, '_blank');
-      }
-    }, 3000);
+    }
   };
 
   const handleStartInstance = async (projectId: string) => {
+    // Prevent double-spawns - check if already spawning or running
+    if (spawningRef.current.has(projectId) || isInstanceRunning(projectId)) {
+      console.log(`[Launcher] Skipping spawn for ${projectId} - already spawning or running`);
+      return;
+    }
+
+    spawningRef.current.add(projectId);
     setSpawningProjectId(projectId);
-    spawnInstance(projectId);
-    setTimeout(() => setSpawningProjectId(null), 3000);
+    
+    try {
+      spawnInstance(projectId);
+      // Clear spawning state after a delay (will be cleared earlier if instance spawns successfully)
+      setTimeout(() => {
+        setSpawningProjectId(null);
+        spawningRef.current.delete(projectId);
+      }, 5000);
+    } catch (err) {
+      spawningRef.current.delete(projectId);
+      setSpawningProjectId(null);
+    }
   };
 
   const handleStopInstance = (projectId: string) => {
@@ -184,18 +217,24 @@ export function LauncherHome() {
         ) : (
           /* Project Grid */
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {projects.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                instance={getInstanceForProject(project.id)}
-                isSpawning={spawningProjectId === project.id || instancesLoading}
-                onOpenDashboard={handleOpenDashboard}
-                onStartInstance={handleStartInstance}
-                onStopInstance={handleStopInstance}
-                onRemoveProject={handleRemoveProject}
-              />
-            ))}
+            {projects.map((project) => {
+              const instance = getInstanceForProject(project.id);
+              const isSpawning = spawningProjectId === project.id;
+              const isRunning = !!instance;
+              
+              return (
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  instance={instance}
+                  isSpawning={isSpawning}
+                  onOpenDashboard={handleOpenDashboard}
+                  onStartInstance={handleStartInstance}
+                  onStopInstance={handleStopInstance}
+                  onRemoveProject={handleRemoveProject}
+                />
+              );
+            })}
           </div>
         )}
       </main>

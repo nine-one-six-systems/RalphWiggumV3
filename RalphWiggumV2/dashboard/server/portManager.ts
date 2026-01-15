@@ -21,12 +21,32 @@ export class PortManager {
   // Track allocated ports
   private allocatedBackendPorts: Set<number> = new Set();
   private allocatedFrontendPorts: Set<number> = new Set();
+  // Mutex to prevent concurrent port allocation
+  private allocationLock: Promise<void> = Promise.resolve();
 
   /**
    * Allocate a new port pair for an instance
    * Returns the next available backend/frontend port pair
+   * Uses a mutex to prevent race conditions
    */
   async allocate(): Promise<PortPair> {
+    // Serialize all allocation requests
+    return new Promise((resolve, reject) => {
+      this.allocationLock = this.allocationLock.then(async () => {
+        try {
+          const portPair = await this._doAllocate();
+          resolve(portPair);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  /**
+   * Internal method that performs the actual port allocation
+   */
+  private async _doAllocate(): Promise<PortPair> {
     for (let i = 0; i < MAX_INSTANCES; i++) {
       const backendPort = BACKEND_PORT_START + i;
       const frontendPort = FRONTEND_PORT_START + i;
@@ -42,6 +62,12 @@ export class PortManager {
       const frontendAvailable = await this.isPortAvailable(frontendPort);
 
       if (backendAvailable && frontendAvailable) {
+        // Double-check after availability check (another request might have grabbed it)
+        if (this.allocatedBackendPorts.has(backendPort) ||
+            this.allocatedFrontendPorts.has(frontendPort)) {
+          continue;
+        }
+        // Atomically allocate both ports
         this.allocatedBackendPorts.add(backendPort);
         this.allocatedFrontendPorts.add(frontendPort);
         return { backendPort, frontendPort };
