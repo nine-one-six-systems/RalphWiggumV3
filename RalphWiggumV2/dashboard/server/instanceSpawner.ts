@@ -42,15 +42,16 @@ export class InstanceSpawner extends EventEmitter {
     const portPair = await this.portManager.allocate();
 
     try {
-      // Spawn the dashboard server
-      const serverScript = path.join(__dirname, 'index.js');
+      // Spawn the dashboard server using tsx for TypeScript
+      const serverScript = path.join(__dirname, 'index.ts');
+      const dashboardDir = path.join(this.ralphPath, 'dashboard');
 
-      // Use ts-node for development or node for production
+      // Use npx tsx to run TypeScript - cross-platform compatible
       const isWindows = process.platform === 'win32';
-      const nodeCmd = process.execPath; // Use the same Node that's running us
+      const npxCmd = isWindows ? 'npx.cmd' : 'npx';
 
-      const childProcess = spawn(nodeCmd, [serverScript], {
-        cwd: path.join(this.ralphPath, 'dashboard'),
+      const childProcess = spawn(npxCmd, ['tsx', serverScript], {
+        cwd: dashboardDir,
         env: {
           ...process.env,
           PORT: portPair.backendPort.toString(),
@@ -63,8 +64,18 @@ export class InstanceSpawner extends EventEmitter {
       });
 
       if (!childProcess.pid) {
-        throw new Error('Failed to start dashboard process');
+        console.error(`[Instance ${projectId}] Failed to spawn process:`);
+        console.error(`  Command: ${npxCmd} tsx ${serverScript}`);
+        console.error(`  CWD: ${dashboardDir}`);
+        console.error(`  Ports: backend=${portPair.backendPort}, frontend=${portPair.frontendPort}`);
+        throw new Error(`Failed to start dashboard process for project ${projectId}`);
       }
+
+      console.log(`[Instance ${projectId}] Spawning process:`);
+      console.log(`  Command: ${npxCmd} tsx ${serverScript}`);
+      console.log(`  CWD: ${dashboardDir}`);
+      console.log(`  PID: ${childProcess.pid}`);
+      console.log(`  Ports: backend=${portPair.backendPort}, frontend=${portPair.frontendPort}`);
 
       const instance: ManagedInstance = {
         projectId,
@@ -76,7 +87,19 @@ export class InstanceSpawner extends EventEmitter {
         portPair,
       };
 
-      // Set up process event handlers
+      // Wait for server to be ready before marking as started
+      const STARTUP_TIMEOUT_MS = 30000; // 30 seconds timeout
+      const serverReady = await this.waitForServerReady(childProcess, projectId, portPair.backendPort, STARTUP_TIMEOUT_MS);
+
+      if (!serverReady) {
+        console.error(`[Instance ${projectId}] Server failed to start within ${STARTUP_TIMEOUT_MS}ms`);
+        childProcess.kill();
+        throw new Error(`Server failed to start within timeout for project ${projectId}`);
+      }
+
+      console.log(`[Instance ${projectId}] Server is ready and responding`);
+
+      // Set up process event handlers for monitoring after startup
       childProcess.stdout?.on('data', (data) => {
         console.log(`[Instance ${projectId}] ${data.toString().trim()}`);
       });
@@ -92,6 +115,10 @@ export class InstanceSpawner extends EventEmitter {
 
       childProcess.on('error', (err) => {
         console.error(`[Instance ${projectId}] Process error: ${err.message}`);
+        if ('code' in err) {
+          console.error(`  Error code: ${(err as NodeJS.ErrnoException).code}`);
+        }
+        console.error(`  Stack: ${err.stack}`);
         this.handleInstanceError(projectId, err);
       });
 
@@ -106,10 +133,87 @@ export class InstanceSpawner extends EventEmitter {
         startedAt: instance.startedAt,
       };
     } catch (err) {
+      // Enhanced error logging for spawn failures
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`[Instance ${projectId}] Spawn failed with error: ${errorMessage}`);
+      console.error(`  Project path: ${projectPath}`);
+      console.error(`  Ralph path: ${this.ralphPath}`);
+
       // Release ports on failure
       this.portManager.release(portPair.backendPort, portPair.frontendPort);
       throw err;
     }
+  }
+
+  /**
+   * Wait for the server to be ready by monitoring stdout for the ready message
+   * or making HTTP health check requests
+   */
+  private waitForServerReady(
+    childProcess: ChildProcess,
+    projectId: string,
+    _port: number, // Reserved for future HTTP health check
+    timeoutMs: number
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      let resolved = false;
+
+      // Method 1: Monitor stdout for the "server running" message
+      const onStdoutData = (data: Buffer) => {
+        const output = data.toString();
+        console.log(`[Instance ${projectId}] ${output.trim()}`);
+
+        if (output.includes('server running on port')) {
+          if (!resolved) {
+            resolved = true;
+            cleanup();
+            resolve(true);
+          }
+        }
+      };
+
+      // Method 2: Handle early exit (process crashed)
+      const onClose = (code: number | null) => {
+        if (!resolved) {
+          resolved = true;
+          console.error(`[Instance ${projectId}] Process exited during startup with code ${code}`);
+          cleanup();
+          resolve(false);
+        }
+      };
+
+      const onError = (err: Error) => {
+        if (!resolved) {
+          resolved = true;
+          console.error(`[Instance ${projectId}] Process error during startup: ${err.message}`);
+          cleanup();
+          resolve(false);
+        }
+      };
+
+      // Cleanup listeners
+      const cleanup = () => {
+        childProcess.stdout?.off('data', onStdoutData);
+        childProcess.off('close', onClose);
+        childProcess.off('error', onError);
+        clearTimeout(timeoutTimer);
+      };
+
+      // Timeout fallback
+      const timeoutTimer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.error(`[Instance ${projectId}] Startup timeout after ${timeoutMs}ms`);
+          cleanup();
+          resolve(false);
+        }
+      }, timeoutMs);
+
+      // Attach listeners
+      childProcess.stdout?.on('data', onStdoutData);
+      childProcess.on('close', onClose);
+      childProcess.on('error', onError);
+    });
   }
 
   /**

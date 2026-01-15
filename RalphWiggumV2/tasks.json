@@ -1,10 +1,10 @@
 {
-  "lastUpdated": "2026-01-15T00:00:00.000Z",
+  "lastUpdated": "2026-01-15T12:00:00.000Z",
   "summary": {
-    "total": 63,
-    "done": 63,
+    "total": 85,
+    "done": 67,
     "inProgress": 0,
-    "pending": 0
+    "pending": 18
   },
   "tasks": [
     { "id": "Task-18", "title": "Add config:saved handler to useWebSocket.ts", "status": "done", "completedAt": "2026-01-14T00:00:00.000Z" },
@@ -66,6 +66,24 @@
     { "id": "Task-75", "title": "Add check_iteration_health() to parse logs for error patterns", "status": "done", "completedAt": "2026-01-15T00:00:00.000Z" },
     { "id": "Task-76", "title": "Add detect_stuck_loop() with consecutive failure tracking", "status": "done", "completedAt": "2026-01-15T00:00:00.000Z" },
     { "id": "Task-77", "title": "Add log_health_metrics() to track iteration stats", "status": "done", "completedAt": "2026-01-15T00:00:00.000Z" },
-    { "id": "Task-78", "title": "Integrate health functions into main loop with warnings", "status": "done", "completedAt": "2026-01-15T00:00:00.000Z" }
+    { "id": "Task-78", "title": "Integrate health functions into main loop with warnings", "status": "done", "completedAt": "2026-01-15T00:00:00.000Z" },
+    { "id": "Task-79", "title": "Fix instanceSpawner.ts to use tsx for TypeScript execution", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-80", "title": "Add error logging to capture spawn failures with details", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-81", "title": "Test launcher instance spawning on Windows", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-82", "title": "Add instance health check before marking as started", "status": "done", "completedAt": "2026-01-15T12:00:00.000Z" },
+    { "id": "Task-83", "title": "Create server endpoint launcher:browse to list directories", "status": "pending", "completedAt": null },
+    { "id": "Task-84", "title": "Create FileBrowser.tsx component with folder navigation", "status": "pending", "completedAt": null },
+    { "id": "Task-85", "title": "Add FileBrowser to AddProjectDialog.tsx", "status": "pending", "completedAt": null },
+    { "id": "Task-86", "title": "Handle Windows drive letters in file browser", "status": "pending", "completedAt": null },
+    { "id": "Task-87", "title": "Add breadcrumb navigation in file browser", "status": "pending", "completedAt": null },
+    { "id": "Task-88", "title": "Filter to show only directories (not files)", "status": "pending", "completedAt": null },
+    { "id": "Task-89", "title": "Highlight directories that are git repos or Ralph-ready", "status": "pending", "completedAt": null },
+    { "id": "Task-90", "title": "Implement createReview() in src/lib/llm-review.ts", "status": "pending", "completedAt": null },
+    { "id": "Task-91", "title": "Add ReviewConfig and ReviewResult types to types/index.ts", "status": "pending", "completedAt": null },
+    { "id": "Task-92", "title": "Create review criteria templates for UI tasks", "status": "pending", "completedAt": null },
+    { "id": "Task-93", "title": "Add post-task review step to loop.sh", "status": "pending", "completedAt": null },
+    { "id": "Task-94", "title": "Integrate screenshot capture for visual reviews", "status": "pending", "completedAt": null },
+    { "id": "Task-95", "title": "Add review:run WebSocket handler to server/index.ts", "status": "pending", "completedAt": null },
+    { "id": "Task-96", "title": "Create ReviewPanel.tsx component", "status": "pending", "completedAt": null }
   ]
 }
