@@ -1,0 +1,56 @@
+{
+  "lastUpdated": "2026-01-15T00:00:00.000Z",
+  "summary": {
+    "total": 31,
+    "done": 0,
+    "inProgress": 0,
+    "pending": 31
+  },
+  "releases": [
+    {
+      "name": "Release 1: Core Dashboard Fixes",
+      "tasks": ["18-31"]
+    },
+    {
+      "name": "Release 2: Agent Management",
+      "tasks": ["37-48"]
+    },
+    {
+      "name": "Release 3: Setup & Dependencies",
+      "tasks": ["49-62"]
+    }
+  ],
+  "tasks": [
+    { "id": "18", "title": "Add config:saved handler to useWebSocket.ts", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "19", "title": "Add Use PRD Documents toggle to PlanGenerator.tsx", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "20", "title": "Update GeneratePlanCommand type in types/index.ts", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "21", "title": "Update server handler to read PRD files in index.ts", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "22", "title": "Update planGenerator.ts to accept prdContext", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "24", "title": "Wire up props from Dashboard.tsx", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "25", "title": "Fix Generate button disabled logic for PRD context", "status": "pending", "spec": "01-prd-plan-integration.md", "completedAt": null },
+    { "id": "26", "title": "Enhance parseTasks() in fileWatcher.ts for checkbox format", "status": "pending", "spec": "02-implementation-plan-parser.md", "completedAt": null },
+    { "id": "27", "title": "Add User Story (US-XXX) pattern recognition", "status": "pending", "spec": "02-implementation-plan-parser.md", "completedAt": null },
+    { "id": "28", "title": "Add numbered checkbox pattern recognition", "status": "pending", "spec": "02-implementation-plan-parser.md", "completedAt": null },
+    { "id": "29", "title": "Add emoji status marker pattern recognition", "status": "pending", "spec": "02-implementation-plan-parser.md", "completedAt": null },
+    { "id": "30", "title": "Test with mixed format IMPLEMENTATION_PLAN.md", "status": "pending", "spec": "02-implementation-plan-parser.md", "completedAt": null },
+    { "id": "31", "title": "Add File Writing Rules section to CLAUDE.md template", "status": "pending", "spec": "03-file-write-safety.md", "completedAt": null },
+    { "id": "32", "title": "Update PROMPT_build.md with file operation safety instructions", "status": "pending", "spec": "03-file-write-safety.md", "completedAt": null },
+    { "id": "33", "title": "Make --model flag conditional in planGenerator.ts", "status": "pending", "spec": "04-cross-platform-cli.md", "completedAt": null },
+    { "id": "34", "title": "Make --model flag conditional in prdGenerator.ts", "status": "pending", "spec": "04-cross-platform-cli.md", "completedAt": null },
+    { "id": "35", "title": "Make --model flag conditional in loop.sh", "status": "pending", "spec": "04-cross-platform-cli.md", "completedAt": null },
+    { "id": "36", "title": "Document CLAUDE_MODEL_FLAG environment variable", "status": "pending", "spec": "04-cross-platform-cli.md", "completedAt": null },
+    { "id": "37", "title": "Create react-typescript-expert.md agent file", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "38", "title": "Create accessibility-expert.md agent file", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "39", "title": "Create qol-ux-expert.md agent file", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "40", "title": "Create golang-backend-expert.md agent file", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "41", "title": "Add installAgentGlobal method to projectConfig.ts", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "42", "title": "Add installAgentProject method to projectConfig.ts", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "43", "title": "Add listRepoAgents method to projectConfig.ts", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "44", "title": "Add WebSocket handlers for agent installation in index.ts", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "45", "title": "Add agent installation types to types/index.ts", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "46", "title": "Add agent installation state/callbacks to useWebSocket.ts", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "47", "title": "Update SpecialistAgentsConfig.tsx with install buttons", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "48", "title": "Wire up agent props in Dashboard.tsx", "status": "pending", "spec": "05-agent-installation.md", "completedAt": null },
+    { "id": "49", "title": "Create dependencyChecker.ts with check functions", "status": "pending", "spec": "06-dependency-checker.md", "completedAt": null }
+  ]
+}

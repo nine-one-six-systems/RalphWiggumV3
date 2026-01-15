@@ -1,0 +1,12 @@
+# Progress Log
+
+This file tracks learnings, patterns, and discoveries across Ralph Wiggum iterations.
+Entries are append-only - never delete, only add.
+
+---
+[2026-01-15] Project Initialized
+- Pattern: Created complete Ralph Wiggum documentation suite
+- Tip: Start with AUDIENCE_JTBD.md to ground all specs in user needs
+- Tip: Use SLC releases to ship value incrementally
+---
+
