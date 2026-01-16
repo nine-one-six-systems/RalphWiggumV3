@@ -241,6 +241,25 @@ export interface DocsErrorMessage extends WSMessage {
   payload: { error: string };
 }
 
+// Session recovery messages (for browser refresh resilience)
+export interface SessionRecoveredMessage extends WSMessage {
+  type: 'session:recovered';
+  payload: {
+    sessionId: string;
+    status: LoopStatus;
+  };
+}
+
+export interface SessionNoneMessage extends WSMessage {
+  type: 'session:none';
+  payload: { reason: string };
+}
+
+export interface SessionErrorMessage extends WSMessage {
+  type: 'session:error';
+  payload: { error: string };
+}
+
 export type ServerMessage =
   | LoopStatusMessage
   | LogMessage
@@ -283,6 +302,8 @@ export type ServerMessage =
   | LauncherInstanceStoppedMessage
   | LauncherInstanceCrashedMessage
   | LauncherDiscoverResultMessage
+  | LauncherInitResultMessage
+  | LauncherInitErrorMessage
   | LauncherErrorMessage
   | LauncherBrowseResultMessage
   | ReviewStatusMessage
@@ -292,7 +313,10 @@ export type ServerMessage =
   | ReviewGeneratorStatusMessage
   | ReviewGeneratorOutputMessage
   | ReviewGeneratorCompleteMessage
-  | ReviewGeneratorErrorMessage;
+  | ReviewGeneratorErrorMessage
+  | SessionRecoveredMessage
+  | SessionNoneMessage
+  | SessionErrorMessage;
 
 // Client commands
 export interface StartLoopCommand {
@@ -653,6 +677,7 @@ export type ClientCommand =
   | LauncherStopInstanceCommand
   | LauncherListInstancesCommand
   | LauncherDiscoverCommand
+  | LauncherInitProjectCommand
   | LauncherBrowseCommand
   | ReviewRunCommand
   | ReviewCancelCommand
@@ -735,6 +760,34 @@ export interface LauncherListInstancesCommand {
 
 export interface LauncherDiscoverCommand {
   type: 'launcher:discover';
+}
+
+export interface LauncherInitProjectCommand {
+  type: 'launcher:project:init';
+  payload: {
+    projectId: string;
+    templates?: string[];  // Optional: specific templates to create (defaults to all)
+  };
+}
+
+// Result of project initialization
+export interface ProjectInitResult {
+  projectId: string;
+  created: string[];  // List of files created
+  skipped: string[];  // List of files that already existed
+}
+
+export interface LauncherInitResultMessage extends WSMessage {
+  type: 'launcher:project:init:result';
+  payload: ProjectInitResult;
+}
+
+export interface LauncherInitErrorMessage extends WSMessage {
+  type: 'launcher:project:init:error';
+  payload: {
+    projectId: string;
+    error: string;
+  };
 }
 
 // Launcher WebSocket Server Messages

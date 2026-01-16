@@ -8,6 +8,18 @@
 
 2. After implementing functionality or resolving problems, run all required tests specified in the task definition. All required tests must exist and pass before the task is considered complete. If functionality is missing then it's your job to add it as per the application specifications. Ultrathink.
 
+2.5 **SELF-VALIDATION PHASE** - Before committing, verify functionality is complete:
+   - **Button Audit**: Every button has a working handler that does something meaningful (not just console.log)
+   - **WebSocket Audit**: Every message type sent from frontend has a handler on the backend (and vice versa)
+   - **State Audit**: Every useState variable is both set AND read somewhere in the component
+   - **Props Audit**: Every prop passed to a component is used, every expected prop is passed
+   - **Error Handling Audit**: Async operations have try-catch and display errors to users
+   - **Loading State Audit**: Long operations show loading feedback to users
+
+   If ANY audit reveals issues, fix them before committing. Do NOT output ALL_TASKS_COMPLETE until validation passes.
+
+   Run validation if available: `npx tsx scripts/validate-functionality.ts`
+
 3. When you discover issues, immediately update @IMPLEMENTATION_PLAN.md with your findings using a subagent. When resolved, update and remove the item.
 
 4. When the tests pass, update @IMPLEMENTATION_PLAN.md, then `git add -A` then `git commit` with a message describing the changes. After the commit, `git push`.

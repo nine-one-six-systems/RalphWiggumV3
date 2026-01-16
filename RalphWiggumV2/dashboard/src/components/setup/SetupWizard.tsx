@@ -149,7 +149,7 @@ export function SetupWizard({
                   Project Setup
                 </CardTitle>
                 <CardDescription>
-                  Configure your Ralph Wiggum project with the guided setup wizard or edit individual
+                  Configure your WIGGUM project with the guided setup wizard or edit individual
                   configuration files.
                 </CardDescription>
               </div>
@@ -213,7 +213,7 @@ export function SetupWizard({
             <CardHeader>
               <CardTitle>Getting Started</CardTitle>
               <CardDescription>
-                Follow these steps to set up your Ralph Wiggum project
+                Follow these steps to set up your WIGGUM project
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -232,7 +232,7 @@ export function SetupWizard({
               <div className="space-y-4">
                 <h3 className="font-semibold">1. Configure Build Commands</h3>
                 <p className="text-sm text-muted-foreground">
-                  Edit AGENTS.md with your project's build, test, and lint commands. Ralph uses
+                  Edit AGENTS.md with your project's build, test, and lint commands. WIGGUM uses
                   these for validation after each implementation.
                 </p>
                 <Button

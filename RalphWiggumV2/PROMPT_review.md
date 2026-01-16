@@ -16,6 +16,25 @@
    - Dead code (unused exports, unreachable branches)
    - Missing error handling in critical paths
 
+2.5 FUNCTIONALITY VERIFICATION PHASE: For each UI component:
+   a. List all buttons and clickable elements
+   b. Trace each onClick to its handler implementation
+   c. Verify the handler actually does something meaningful (not empty, not just console.log)
+   d. For WebSocket operations, verify:
+      - The message type is handled on the receiving end
+      - Response handlers exist for success AND error cases
+   e. For state management, verify:
+      - useState variables are both set AND read
+      - Props passed to components are actually used
+   f. Flag any "dead" handlers (empty, placeholder, or log-only)
+
+   For each WebSocket message type in the codebase:
+   a. Find all places where it's sent (frontend or backend)
+   b. Find all places where it's handled
+   c. Flag any sent-but-not-handled or handled-but-never-sent patterns
+
+   Run automated check if available: `npx tsx scripts/validate-functionality.ts`
+
 3. SPEC COMPLIANCE: For each spec in `specs/*`:
    - List acceptance criteria
    - Check if tests exist for each criterion

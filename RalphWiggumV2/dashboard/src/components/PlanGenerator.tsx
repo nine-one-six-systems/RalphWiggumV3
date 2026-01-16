@@ -106,7 +106,7 @@ export function PlanGenerator({
             Generate Implementation Plan
           </CardTitle>
           <CardDescription>
-            Describe your project goal and Claude will generate a Ralph Wiggum-compatible
+            Describe your project goal and Claude will generate a WIGGUM-compatible
             implementation plan.
           </CardDescription>
         </CardHeader>

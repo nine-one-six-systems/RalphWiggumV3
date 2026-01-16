@@ -206,6 +206,8 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
           clearTimeout(reconnectTimeoutRef.current);
           reconnectTimeoutRef.current = null;
         }
+        // Request current session state for browser refresh resilience
+        ws.send(JSON.stringify({ type: 'session:current', payload: {} }));
       }
     };
 
@@ -238,6 +240,20 @@ export function useWebSocket(url: string = `ws://localhost:${DEFAULT_WS_PORT}/ws
         switch (message.type) {
           case 'loop:status':
             setLoopStatus(message.payload);
+            break;
+          case 'session:recovered':
+            // Session recovered after browser refresh
+            console.log('Session recovered:', message.payload.sessionId);
+            if (message.payload.status) {
+              setLoopStatus(message.payload.status);
+            }
+            break;
+          case 'session:none':
+            // No active session to recover - this is normal
+            console.log('No active session:', message.payload.reason);
+            break;
+          case 'session:error':
+            console.error('Session recovery error:', message.payload.error);
             break;
           case 'loop:log':
             setLogs((prev) => [...prev.slice(-500), message.payload]); // Keep last 500 logs

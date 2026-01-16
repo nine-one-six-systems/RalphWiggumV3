@@ -7,6 +7,7 @@ set -euo pipefail
 #   ./loop.sh plan-slc [max_iterations]      # SLC-oriented planning mode
 #   ./loop.sh plan-work "work description"   # Work-scoped planning on current branch
 #   ./loop.sh review [max_iterations]        # Review mode - analyze code vs docs
+#   ./loop.sh validate [max_iterations]      # Validate mode - check functionality completeness
 # Examples:
 #   ./loop.sh                               # Build mode, unlimited
 #   ./loop.sh 20                            # Build mode, max 20 iterations
@@ -14,6 +15,7 @@ set -euo pipefail
 #   ./loop.sh plan-slc                      # SLC planning, unlimited
 #   ./loop.sh plan-work "user auth"         # Scoped planning for work branch
 #   ./loop.sh review                        # Review code vs documentation
+#   ./loop.sh validate                      # Validate functionality is complete
 
 # Support running from a different directory (embedded mode)
 # RALPH_DIR points to RalphWiggumV2's directory for prompt files
@@ -52,6 +54,11 @@ elif [ "$1" = "review" ]; then
     MODE="review"
     PROMPT_FILE="PROMPT_review.md"
     MAX_ITERATIONS=${2:-1}  # Default 1 iteration for review (deep analysis)
+elif [ "$1" = "validate" ]; then
+    # Validate mode - check functionality completeness
+    MODE="validate"
+    PROMPT_FILE="PROMPT_validate.md"
+    MAX_ITERATIONS=${2:-1}  # Default 1 iteration for validation
 elif [[ "${1:-}" =~ ^[0-9]+$ ]]; then
     # Build mode with max iterations
     MAX_ITERATIONS=$1
@@ -339,6 +346,41 @@ log_health_metrics() {
 EOF
 }
 
+# Run functionality validation checks
+# Returns 0 if passed (or script not found), 1 if critical issues found
+check_functionality() {
+    local script_path="$RALPH_DIR/scripts/validate-functionality.ts"
+
+    # Skip if script doesn't exist
+    if [ ! -f "$script_path" ]; then
+        return 0
+    fi
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🔍 Running functionality validation..."
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Run validation and capture exit code
+    local dashboard_dir="$RALPH_DIR/dashboard"
+    if [ -d "$dashboard_dir" ]; then
+        (cd "$dashboard_dir" && npx tsx "$script_path" "$(pwd)" 2>&1) | tee -a "$HEALTH_LOG"
+        local exit_code=${PIPESTATUS[0]}
+    else
+        npx tsx "$script_path" "$(pwd)" 2>&1 | tee -a "$HEALTH_LOG"
+        local exit_code=${PIPESTATUS[0]}
+    fi
+
+    if [ "$exit_code" -eq 1 ]; then
+        echo ""
+        echo "⚠️  Functionality validation found critical issues"
+        echo "   These will be included in the next iteration's context"
+        return 1
+    fi
+
+    return 0
+}
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Pre-flight Checks
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -370,6 +412,17 @@ if [ "$MODE" = "review" ]; then
     echo ""
 fi
 
+# Validate mode special message
+if [ "$MODE" = "validate" ]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "🔍 VALIDATE MODE"
+    echo "   Checking functionality completeness..."
+    echo "   Output: FUNCTIONALITY_REPORT.md"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+fi
+
 # Main loop
 while true; do
     if [ $MAX_ITERATIONS -gt 0 ] && [ $ITERATION -ge $MAX_ITERATIONS ]; then
@@ -392,6 +445,17 @@ while true; do
             echo "   - Review findings in REVIEW_REPORT.md"
             echo "   - Run ./loop.sh plan to generate fix tasks"
             echo "   - Or manually address issues"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        elif [ "$MODE" = "validate" ]; then
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "🔍 Validation complete!"
+            echo "   Report: FUNCTIONALITY_REPORT.md"
+            echo ""
+            echo "   Next steps:"
+            echo "   - Review findings in FUNCTIONALITY_REPORT.md"
+            echo "   - Fix critical issues (dead handlers, missing WS handlers)"
+            echo "   - Run ./loop.sh build to address issues"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         fi
         break
@@ -451,6 +515,15 @@ while true; do
     # Log metrics
     log_health_metrics "$ITERATION" "$ITERATION_DURATION" "$TASKS_AT_START" "$TASKS_AT_END"
 
+    # Run functionality validation (only in build mode, and if tasks were completed)
+    if [ "$MODE" = "build" ] && [ "$TASKS_AT_END" -gt "$TASKS_AT_START" ]; then
+        check_functionality
+        FUNC_CHECK_RESULT=$?
+        if [ "$FUNC_CHECK_RESULT" -eq 1 ]; then
+            echo "   Functionality issues found - will be addressed in next iteration"
+        fi
+    fi
+
     # ═══════════════════════════════════════════════════════════════════════════
     # Optional post-task review (LLM-as-Judge quality gate)
     # Set ENABLE_REVIEW=true to enable review prompts after task completion
@@ -477,6 +550,13 @@ while true; do
     if [ "$MODE" = "review" ]; then
         ITERATION=$((ITERATION + 1))
         echo -e "\n\n======================== REVIEW ITERATION $ITERATION ========================\n"
+        continue
+    fi
+
+    # Validate mode: just continue to next iteration (no completion signal needed)
+    if [ "$MODE" = "validate" ]; then
+        ITERATION=$((ITERATION + 1))
+        echo -e "\n\n======================== VALIDATE ITERATION $ITERATION ========================\n"
         continue
     fi
 

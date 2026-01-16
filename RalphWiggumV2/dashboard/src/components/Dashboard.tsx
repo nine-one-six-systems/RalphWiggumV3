@@ -108,6 +108,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
   } = useWebSocket(wsUrl);
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [generateSubTab, setGenerateSubTab] = useState<'plan' | 'review' | 'prd'>('plan');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
 
@@ -162,13 +163,16 @@ export function Dashboard({ backendPort }: DashboardProps) {
       <header className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-              RW
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg">
+              W
             </div>
             <div>
-              <h1 className="text-xl font-semibold">Ralph Wiggum Dashboard</h1>
+              <h1 className="text-xl font-semibold">
+                <span className="text-primary">WIGGUM</span>
+                <span className="text-muted-foreground font-normal text-sm ml-2">R.A.L.P.H.</span>
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Autonomous Development Loop Monitor
+                Recursive Autonomous Loop for Programming Humans
               </p>
             </div>
           </div>
@@ -248,8 +252,9 @@ export function Dashboard({ backendPort }: DashboardProps) {
             <ExistingDocsViewer
               projectConfig={projectConfig}
               onReadFile={readConfigFile}
-              onNavigateToGenerate={() => {
+              onNavigateToGenerate={(tab) => {
                 setActiveTab('generate');
+                setGenerateSubTab(tab);
               }}
               previewDoc={configPreviewDoc}
               isLoadingPreview={configPreviewLoading}
@@ -284,7 +289,7 @@ export function Dashboard({ backendPort }: DashboardProps) {
 
           {/* Generate Tab */}
           <TabsContent value="generate">
-            <Tabs defaultValue="plan" className="space-y-4">
+            <Tabs value={generateSubTab} onValueChange={(v) => setGenerateSubTab(v as 'plan' | 'review' | 'prd')} className="space-y-4">
               <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
                 <TabsTrigger value="plan" className="gap-2">
                   <ListTodo className="h-4 w-4" />
@@ -329,6 +334,12 @@ export function Dashboard({ backendPort }: DashboardProps) {
                   onGenerateReview={generateReview}
                   onCancelReview={cancelReviewGenerator}
                   onClearOutput={clearReviewGeneratorOutput}
+                  onSaveReport={(content) =>
+                    sendCommand({
+                      type: 'config:write',
+                      payload: { file: 'REVIEW_REPORT.md', content },
+                    })
+                  }
                 />
               </TabsContent>
 

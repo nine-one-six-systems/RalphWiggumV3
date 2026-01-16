@@ -152,9 +152,11 @@ export function LauncherHome() {
             <div className="flex items-center gap-3">
               <Rocket className="h-8 w-8 text-primary" />
               <div>
-                <h1 className="text-2xl font-bold">Ralph Launcher</h1>
+                <h1 className="text-2xl font-bold">
+                  <span className="text-primary">WIGGUM</span> Launcher
+                </h1>
                 <p className="text-sm text-muted-foreground">
-                  Manage your Ralph Wiggum projects
+                  Manage your R.A.L.P.H. projects
                 </p>
               </div>
             </div>
@@ -248,7 +250,7 @@ export function LauncherHome() {
             <FolderOpen className="h-16 w-16 text-muted-foreground mb-4" />
             <h2 className="text-xl font-semibold mb-2">No Projects Yet</h2>
             <p className="text-muted-foreground mb-6 max-w-md">
-              Add your first project to start managing Ralph Wiggum loops across
+              Add your first project to start managing WIGGUM loops across
               multiple codebases.
             </p>
             <Button onClick={() => setIsAddDialogOpen(true)}>

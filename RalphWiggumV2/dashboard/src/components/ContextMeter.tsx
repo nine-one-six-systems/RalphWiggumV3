@@ -67,7 +67,7 @@ export function ContextMeter({ iteration }: ContextMeterProps) {
 
         <div className="space-y-2 text-sm">
           <p className="text-muted-foreground">
-            Ralph Wiggum uses one task per iteration to maintain fresh context and stay in the
+            WIGGUM uses one task per iteration to maintain fresh context and stay in the
             "smart zone" for optimal AI performance.
           </p>
           <div className="grid grid-cols-2 gap-2 text-xs">

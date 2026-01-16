@@ -13,6 +13,14 @@ export default {
         sm: 'calc(var(--radius) - 4px)'
       },
       colors: {
+        // WIGGUM brand colors
+        wiggum: {
+          obsidian: '#121215',
+          slate: '#1a1a1f',
+          elevated: '#2a2a32',
+          cyan: '#00e5e5',
+          purple: '#6b4d8a',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

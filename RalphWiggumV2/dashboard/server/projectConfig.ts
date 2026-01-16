@@ -3,6 +3,9 @@ import path from 'path';
 import os from 'os';
 import type { ProjectConfig, AgentInfo, CursorRuleInfo } from '../src/types';
 
+// Maximum file size for reads (10MB)
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
 const CONFIG_FILES = {
   'AGENTS.md': 'AGENTS.md',
   'CLAUDE.md': 'CLAUDE.md',
@@ -98,21 +101,41 @@ export class ProjectConfigManager {
 
   async readFile(filename: string): Promise<string> {
     // Validate filename to prevent path traversal
-    if (filename.includes('..') || path.isAbsolute(filename)) {
+    if (path.isAbsolute(filename)) {
       throw new Error('Invalid filename');
     }
 
-    const filePath = path.join(this.projectPath, filename);
+    const filePath = path.resolve(this.projectPath, filename);
+    const projectRoot = path.resolve(this.projectPath);
+
+    // Ensure resolved path is within project directory
+    if (!filePath.startsWith(projectRoot + path.sep) && filePath !== projectRoot) {
+      throw new Error('Invalid filename');
+    }
+
+    // Check file size before reading
+    const stat = await fs.stat(filePath);
+    if (stat.size > MAX_FILE_SIZE_BYTES) {
+      throw new Error(`File too large (max ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB)`);
+    }
+
     return fs.readFile(filePath, 'utf-8');
   }
 
   async writeFile(filename: string, content: string): Promise<void> {
     // Validate filename to prevent path traversal
-    if (filename.includes('..') || path.isAbsolute(filename)) {
+    if (path.isAbsolute(filename)) {
       throw new Error('Invalid filename');
     }
 
-    const filePath = path.join(this.projectPath, filename);
+    const filePath = path.resolve(this.projectPath, filename);
+    const projectRoot = path.resolve(this.projectPath);
+
+    // Ensure resolved path is within project directory
+    if (!filePath.startsWith(projectRoot + path.sep) && filePath !== projectRoot) {
+      throw new Error('Invalid filename');
+    }
+
     console.log(`Writing ${filename} to: ${filePath}`);
 
     // Ensure directory exists

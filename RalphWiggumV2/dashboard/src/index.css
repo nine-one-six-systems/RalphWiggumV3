@@ -32,30 +32,31 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* WIGGUM Theme - Obsidian/Cyan/Purple */
+    --background: 240 7% 8%;           /* obsidian #121215 */
+    --foreground: 180 100% 95%;        /* bright text */
+    --card: 240 5% 11%;                /* slate #1a1a1f */
+    --card-foreground: 180 100% 95%;
+    --popover: 240 5% 11%;
+    --popover-foreground: 180 100% 95%;
+    --primary: 180 100% 45%;           /* cyan #00e5e5 */
+    --primary-foreground: 240 7% 8%;   /* obsidian for contrast */
+    --secondary: 270 29% 42%;          /* purple #6b4d8a */
+    --secondary-foreground: 180 100% 95%;
+    --muted: 240 6% 18%;               /* elevated #2a2a32 */
+    --muted-foreground: 240 5% 65%;
+    --accent: 180 100% 45%;            /* cyan */
+    --accent-foreground: 240 7% 8%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 20%;
+    --input: 240 6% 18%;
+    --ring: 180 100% 45%;              /* cyan ring */
+    --chart-1: 180 100% 45%;           /* cyan */
+    --chart-2: 270 29% 50%;            /* purple */
+    --chart-3: 160 60% 45%;            /* teal */
+    --chart-4: 200 80% 55%;            /* blue */
+    --chart-5: 300 60% 55%;            /* magenta */
   }
 }
 

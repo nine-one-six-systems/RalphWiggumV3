@@ -55,7 +55,7 @@ export function ClaudeMdConfig({
           CLAUDE.md Configuration
         </CardTitle>
         <CardDescription>
-          Review and manage CLAUDE.md files for your project and Ralph Wiggum.
+          Review and manage CLAUDE.md files for your project and WIGGUM.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -111,9 +111,9 @@ export function ClaudeMdConfig({
           </div>
         </div>
 
-        {/* Ralph's CLAUDE.md Section */}
+        {/* WIGGUM's CLAUDE.md Section */}
         <div className="space-y-3">
-          <h3 className="font-medium text-sm">Ralph Wiggum CLAUDE.md</h3>
+          <h3 className="font-medium text-sm">WIGGUM CLAUDE.md</h3>
           {ralphFile && (
             <div className="flex items-center gap-3 rounded-lg border p-3">
               <FileText className="h-4 w-4 text-muted-foreground" />
@@ -148,13 +148,13 @@ export function ClaudeMdConfig({
           )}
         </div>
 
-        {/* Apply Ralph's CLAUDE.md */}
+        {/* Apply WIGGUM's CLAUDE.md */}
         {ralphFile?.exists && (
           <div className="rounded-lg border border-dashed p-4 space-y-3">
             <p className="text-sm text-muted-foreground">
               {hasParentClaudeMd
-                ? "Replace your project's CLAUDE.md with Ralph's workflow configuration."
-                : "Apply Ralph's CLAUDE.md to your project to enable the Ralph Wiggum protocol."}
+                ? "Replace your project's CLAUDE.md with WIGGUM's workflow configuration."
+                : "Apply WIGGUM's CLAUDE.md to your project to enable the WIGGUM protocol."}
             </p>
             <Button
               onClick={onApplyRalphClaudeMd}
@@ -167,7 +167,7 @@ export function ClaudeMdConfig({
               ) : (
                 <Copy className="h-4 w-4" />
               )}
-              {hasParentClaudeMd ? "Replace with Ralph's CLAUDE.md" : "Apply Ralph's CLAUDE.md"}
+              {hasParentClaudeMd ? "Replace with WIGGUM's CLAUDE.md" : "Apply WIGGUM's CLAUDE.md"}
             </Button>
           </div>
         )}

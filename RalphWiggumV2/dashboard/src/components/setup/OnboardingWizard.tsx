@@ -147,7 +147,7 @@ Language: ${language}
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Welcome to Ralph Wiggum</CardTitle>
+              <CardTitle className="text-2xl">Welcome to <span className="text-primary">WIGGUM</span></CardTitle>
               <CardDescription className="text-base">
                 Let's set up your project for autonomous AI-powered development.
               </CardDescription>
@@ -161,7 +161,7 @@ Language: ${language}
                     <div>
                       <p className="font-medium text-green-700">Embedded Mode Detected</p>
                       <p className="text-sm text-green-600/80 mt-1">
-                        Ralph will analyze your parent project:
+                        WIGGUM will analyze your parent project:
                       </p>
                       <code className="text-xs bg-green-500/10 px-2 py-1 rounded mt-2 block truncate">
                         {projectInfo.targetProjectPath}
@@ -185,7 +185,7 @@ Language: ${language}
                   <div>
                     <p className="font-medium">Configure AGENTS.md</p>
                     <p className="text-sm text-muted-foreground">
-                      Set up commands for Ralph to use
+                      Set up commands for WIGGUM to use
                     </p>
                   </div>
                 </div>
@@ -194,7 +194,7 @@ Language: ${language}
                   <div>
                     <p className="font-medium">Import documentation</p>
                     <p className="text-sm text-muted-foreground">
-                      Consolidate existing docs into Ralph's structure
+                      Consolidate existing docs into WIGGUM's structure
                     </p>
                   </div>
                 </div>

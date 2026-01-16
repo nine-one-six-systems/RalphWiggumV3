@@ -19,6 +19,9 @@ import { ProjectDiscovery } from './projectDiscovery.js';
 import { ReviewRunner } from './reviewRunner.js';
 import { ReviewGenerator } from './reviewGenerator.js';
 import { TemplateManager, type TemplateName } from './templateManager.js';
+import { RalphDatabase } from './database/index.js';
+import { getSessionRepository } from './database/repositories/SessionRepository.js';
+import { getHealthMonitor } from './healthMonitor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -117,6 +120,11 @@ async function startServer() {
 
   console.log('\n' + formatProjectInfo(projectRoot) + '\n');
 
+  // Initialize SQLite database
+  console.log('Initializing database...');
+  RalphDatabase.getInstance();
+  console.log(`Database: ${RalphDatabase.getDatabasePath()}`);
+
   const app = express();
   const server = createServer(app);
   const wss = new WebSocketServer({ server, path: '/ws' });
@@ -143,6 +151,10 @@ async function startServer() {
 
   // Initialize review generator (Code vs Docs analysis - Feature Set 14)
   const reviewGenerator = new ReviewGenerator(TARGET_PROJECT_PATH, RALPH_PATH);
+
+  // Initialize health monitor for session management
+  const healthMonitor = getHealthMonitor();
+  healthMonitor.start();
 
   // Track connected clients
   const clients = new Set<WebSocket>();
@@ -180,6 +192,56 @@ async function startServer() {
             break;
           case 'loop:stop':
             loopController.stop();
+            break;
+          case 'session:current':
+            // Return current active session for browser refresh resilience
+            try {
+              const sessionRepo = getSessionRepository();
+              const activeSessions = sessionRepo.getActiveSessions();
+              // Find session for current project path
+              const projectId = message.payload?.projectId;
+              let currentSession = null;
+
+              if (projectId) {
+                currentSession = sessionRepo.getActiveSessionForProject(projectId);
+              } else if (activeSessions.length > 0) {
+                // Return the most recent active session
+                currentSession = activeSessions[0];
+              }
+
+              if (currentSession) {
+                // Check if the process is still alive
+                try {
+                  process.kill(currentSession.pid, 0);
+                  // Process alive - recover the session
+                  loopController.recoverSession(currentSession);
+                  ws.send(JSON.stringify({
+                    type: 'session:recovered',
+                    payload: {
+                      sessionId: currentSession.id,
+                      status: loopController.getStatus(),
+                    }
+                  }));
+                } catch {
+                  // Process is dead - mark as crashed
+                  sessionRepo.markSessionCrashed(currentSession.id);
+                  ws.send(JSON.stringify({
+                    type: 'session:none',
+                    payload: { reason: 'process_dead' }
+                  }));
+                }
+              } else {
+                ws.send(JSON.stringify({
+                  type: 'session:none',
+                  payload: { reason: 'no_active_session' }
+                }));
+              }
+            } catch (err) {
+              ws.send(JSON.stringify({
+                type: 'session:error',
+                payload: { error: `Failed to recover session: ${err instanceof Error ? err.message : 'Unknown error'}` }
+              }));
+            }
             break;
           case 'config:read':
             const content = await projectConfig.readFile(message.payload.file);
@@ -268,12 +330,18 @@ ${audienceContent}
             try {
               const docPath = message.payload.docPath;
               // Validate path to prevent directory traversal
-              const normalizedPath = path.normalize(docPath);
-              if (normalizedPath.startsWith('..') || path.isAbsolute(normalizedPath)) {
+              // Use path.resolve to get canonical path and verify it's within project
+              if (path.isAbsolute(docPath)) {
                 ws.send(JSON.stringify({ type: 'docs:error', payload: { error: 'Invalid path' } }));
                 break;
               }
-              const fullPath = path.join(TARGET_PROJECT_PATH, normalizedPath);
+              const fullPath = path.resolve(TARGET_PROJECT_PATH, docPath);
+              const projectRoot = path.resolve(TARGET_PROJECT_PATH);
+              // Ensure resolved path starts with project root (prevents ../../../etc/passwd attacks)
+              if (!fullPath.startsWith(projectRoot + path.sep) && fullPath !== projectRoot) {
+                ws.send(JSON.stringify({ type: 'docs:error', payload: { error: 'Invalid path' } }));
+                break;
+              }
               const docContent = await fs.readFile(fullPath, 'utf-8');
               ws.send(JSON.stringify({ type: 'docs:content', payload: { path: docPath, content: docContent } }));
             } catch (err) {
@@ -816,8 +884,12 @@ ${audienceContent}
     console.log('Shutting down...');
     fileWatcher.stop();
     loopController.stop();
+    // Stop health monitor
+    healthMonitor.stop();
     // Stop all spawned instances
     await instanceSpawner.stopAll();
+    // Close database
+    RalphDatabase.close();
     server.close();
     process.exit(0);
   });

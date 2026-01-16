@@ -34,6 +34,7 @@ interface ReviewGeneratorProps {
   }) => void;
   onCancelReview: () => void;
   onClearOutput: () => void;
+  onSaveReport: (content: string) => void;
 }
 
 const MODE_INFO: Record<ReviewGeneratorMode, { name: string; description: string; icon: typeof Search }> = {
@@ -62,6 +63,7 @@ export function ReviewGenerator({
   onGenerateReview,
   onCancelReview,
   onClearOutput,
+  onSaveReport,
 }: ReviewGeneratorProps) {
   const [mode, setMode] = useState<ReviewGeneratorMode>('review');
   const [focusArea, setFocusArea] = useState('');
@@ -85,9 +87,7 @@ export function ReviewGenerator({
   const handleSaveReport = () => {
     const content = reviewComplete?.report || reviewOutput;
     if (content) {
-      // This would be handled by the server to write to REVIEW_REPORT.md
-      // For now, just copy to clipboard
-      navigator.clipboard.writeText(content);
+      onSaveReport(content);
     }
   };
 

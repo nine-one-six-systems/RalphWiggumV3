@@ -80,8 +80,8 @@ export function PromptsConfig({ onWriteFile }: PromptsConfigProps) {
           Prompt Templates
         </CardTitle>
         <CardDescription>
-          Configure the prompts used for different Ralph Wiggum modes. These prompts define how
-          Ralph approaches planning and building.
+          Configure the prompts used for different WIGGUM modes. These prompts define how
+          WIGGUM approaches planning and building.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
